@@ -47,6 +47,21 @@ if PROXY_FORWARDED_FOR or PROXY_FORWARDED_PROTO:
         x_proto=PROXY_FORWARDED_PROTO
     )
 
+
+def enforce_access_log_retention(conn, days=None):
+    """Delete access log rows older than the retention window."""
+    retention_days = ACCESS_LOG_RETENTION_DAYS if days is None else days
+    if retention_days is None or retention_days <= 0:
+        return 0
+    cutoff = (datetime.datetime.utcnow() - datetime.timedelta(days=retention_days)).isoformat()
+    cursor = conn.execute(
+        "DELETE FROM access_logs WHERE accessed_at < ?",
+        (cutoff,)
+    )
+    conn.commit()
+    return cursor.rowcount
+
+
 os.makedirs("data", exist_ok=True)
 
 # Initialize SQLite database
@@ -222,20 +237,6 @@ def is_post_allowed_for_ref(ref, slug):
             (ref, slug)
         ).fetchone()
         return row is not None and row[0] == 1
-
-
-def enforce_access_log_retention(conn, days=None):
-    """Delete access log rows older than the retention window."""
-    retention_days = ACCESS_LOG_RETENTION_DAYS if days is None else days
-    if retention_days is None or retention_days <= 0:
-        return 0
-    cutoff = (datetime.datetime.utcnow() - datetime.timedelta(days=retention_days)).isoformat()
-    cursor = conn.execute(
-        "DELETE FROM access_logs WHERE accessed_at < ?",
-        (cutoff,)
-    )
-    conn.commit()
-    return cursor.rowcount
 
 
 def extract_referer_domain(raw_referer):
