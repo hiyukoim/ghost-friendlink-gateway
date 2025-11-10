@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 DB_PATH = "data/tokens.db"
 GHOST_URL = os.getenv("GHOST_URL", "https://example.com")
-GHOST_ADMIN_KEY = os.getenv("GHOST_ADMIN_KEY", "")
+GHOST_ADMIN_KEY = os.getenv("GHOST_ADMIN_KEY", "").strip()
 APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:5000")
 DEFAULT_REDIRECT = os.getenv("DEFAULT_REDIRECT", f"{GHOST_URL}/#/portal/signup")
 
