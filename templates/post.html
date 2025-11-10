@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    {% set canonical_url = ghost_url ~ '/' ~ post.slug ~ '/' if ghost_url and post.slug else ghost_url %}
+    {% set page_title = post.meta_title or post.og_title or post.twitter_title or post.title or 'Friend Link Access' %}
+    {% set site_title = site.title or 'Friend Link Access' %}
+    {% set excerpt_text = post.excerpt | default('', true) %}
+    {% set meta_description = post.meta_description or post.og_description or post.twitter_description or (excerpt_text | striptags | truncate(160)) %}
+    {% if not meta_description %}
+        {% set meta_description = site.description %}
+    {% endif %}
+    {% set og_image = post.og_image or post.feature_image or post.twitter_image %}
+    {% set twitter_image = post.twitter_image or og_image %}
+    {% set favicon_href = site.icon or site.logo or (ghost_url ~ '/favicon.ico' if ghost_url else None) %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% if meta_description %}
+    <meta name="description" content="{{ meta_description }}">
+    {% endif %}
+    <title>{{ page_title }}{% if site_title %} - {{ site_title }}{% endif %}</title>
+    {% if favicon_href %}
+    <link rel="icon" href="{{ favicon_href }}" sizes="any">
+    {% endif %}
+    {% if canonical_url %}
+    <link rel="canonical" href="{{ canonical_url }}">
+    {% endif %}
+    <meta property="og:type" content="article">
+    {% if canonical_url %}<meta property="og:url" content="{{ canonical_url }}">{% endif %}
+    {% if page_title %}<meta property="og:title" content="{{ page_title }}">{% endif %}
+    {% if meta_description %}<meta property="og:description" content="{{ meta_description }}">{% endif %}
+    {% if site_title %}<meta property="og:site_name" content="{{ site_title }}">{% endif %}
+    {% if og_image %}<meta property="og:image" content="{{ og_image }}">{% endif %}
+    <meta name="twitter:card" content="{% if twitter_image %}summary_large_image{% else %}summary{% endif %}">
+    {% if page_title %}<meta name="twitter:title" content="{{ page_title }}">{% endif %}
+    {% if meta_description %}<meta name="twitter:description" content="{{ meta_description }}">{% endif %}
+    {% if twitter_image %}<meta name="twitter:image" content="{{ twitter_image }}">{% endif %}
+    {% if custom_css_url %}
+    <link rel="stylesheet" href="{{ custom_css_url }}">
+    {% else %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% endif %}
+    <style>
+        .ref-banner {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(15, 23, 42, 0.85);
+            color: #fff;
+            padding: 0.6rem 1rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+            z-index: 999;
+        }
+        .ref-banner small {
+            font-weight: 400;
+            opacity: 0.85;
+        }
+    </style>
+</head>
+<body>
+    {% if ref %}
+    <div class="ref-banner">
+        <small>This link belongs to</small><br>
+        {{ ref }}
+    </div>
+    {% endif %}
+    <div class="container">
+        <article class="post-content">
+            {% if post.html %}
+            {{ post.html | safe }}
+            {% else %}
+            <p>Content not available.</p>
+            {% endif %}
+        </article>
+        
+        {% if site.title or ghost_url %}
+        <div class="footer">
+            {% if site.title %}
+            <p>{{ site.title }}</p>
+            {% endif %}
+            {% if ghost_url %}
+            <p><a href="{{ ghost_url }}">Visit original site</a></p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

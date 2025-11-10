@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FriendLink Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f4f5f7;
+            margin: 0;
+            padding: 2rem;
+            color: #1f2933;
+        }
+        h1, h2 {
+            margin: 0 0 1rem 0;
+        }
+        .heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.6rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge.active {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .badge.inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .token {
+            font-family: "SFMono-Regular", Consolas, Monaco, "Liberation Mono", monospace;
+            font-size: 0.85rem;
+            color: #475569;
+        }
+        .empty {
+            color: #94a3b8;
+            font-style: italic;
+        }
+        .revoke-btn {
+            padding: 0.35rem 0.8rem;
+            border-radius: 8px;
+            border: none;
+            background: #fee2e2;
+            color: #991b1b;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .revoke-btn:hover {
+            background: #fecaca;
+        }
+        .ref-action {
+            padding: 0.35rem 0.8rem;
+            border-radius: 8px;
+            border: none;
+            background: #fef3c7;
+            color: #92400e;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .ref-action:hover {
+            background: #fde68a;
+        }
+        .guest-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 0.5rem;
+        }
+        .guest-pill {
+            background: #e0f2fe;
+            color: #0f172a;
+            border-radius: 999px;
+            padding: 0.25rem 0.6rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+        }
+        .guest-pill button {
+            border: none;
+            background: transparent;
+            color: #0f172a;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0;
+        }
+        .post-add,
+        .guest-remove {
+            padding: 0.3rem 0.8rem;
+            border-radius: 8px;
+            border: 1px dashed #38bdf8;
+            background: transparent;
+            color: #0ea5e9;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .post-add:hover,
+        .guest-remove:hover {
+            background: rgba(14, 165, 233, 0.1);
+        }
+        code {
+            background: #e2e8f0;
+            padding: 0.15rem 0.4rem;
+            border-radius: 6px;
+        }
+        @media (max-width: 720px) {
+            body {
+                padding: 1rem;
+            }
+            table {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="heading">
+        <h1>{{ site.title or "FriendLink Dashboard" }}</h1>
+        {% if ghost_url %}
+        <a href="{{ ghost_url }}" target="_blank" rel="noopener">Visit Ghost</a>
+        {% endif %}
+    </div>
+
+    <section class="card">
+        <h2>Generate Share Link</h2>
+        <p style="color:#64748b;font-size:0.9rem;">Paste the Ghost slug and the guest identifier (referrer). This works like a link shortener: first box = post, second box = guest. Optional expiry overrides sit underneath.</p>
+        <form id="generator-form" style="display:grid;gap:0.75rem;max-width:720px;">
+            <label>
+                <span>Post slug (Ghost URL segment)</span>
+                <textarea id="gen-slug" rows="2" required placeholder="my-paid-post" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;"></textarea>
+            </label>
+            <label>
+                <span>Guest / Referrer</span>
+                <textarea id="gen-ref" rows="2" required placeholder="user@example.com or patreon_01_01" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;"></textarea>
+            </label>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <label style="flex:1 1 200px;">
+                    <span>Expires (days, optional)</span>
+                    <input type="number" id="gen-days" min="0" placeholder="Leave empty for no expiry" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;">
+                </label>
+                <label style="flex:1 1 200px;">
+                    <span>Expires at (YYYY-MM-DD, optional)</span>
+                    <input type="text" id="gen-date" placeholder="e.g. 2025-12-31" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;">
+                </label>
+            </div>
+            <button type="submit" style="padding:0.8rem 1.2rem;border:none;border-radius:10px;background:#2563eb;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;">Generate link</button>
+        </form>
+        <div style="margin-top:0.8rem;color:#94a3b8;font-size:0.85rem;">
+            <strong>Required:</strong> Post slug + Guest (referrer).<br>
+            <strong>Optional:</strong> Expires (days) or Expires at. Leave empty for “never expires”.
+        </div>
+        <div id="generator-result" style="margin-top:1rem;"></div>
+    </section>
+
+    <section class="card">
+        <h2>Posts & Guests</h2>
+        <p style="color:#64748b;font-size:0.9rem;">Treat each Ghost slug as a room. Add or remove guests (referrers) per post. Changing a post slug in Ghost requires minting new links.</p>
+        <form id="post-grant-form" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+            <input type="text" id="post-slug" placeholder="Ghost slug (e.g. my-paid-post)" required style="flex:1;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;">
+            <input type="text" id="post-ref" placeholder="Referrer (guest)" required style="flex:1;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;">
+            <button type="submit" style="padding:0.6rem 1rem;border:none;border-radius:10px;background:#0ea5e9;color:#fff;font-weight:600;cursor:pointer;">Grant access</button>
+        </form>
+        {% if posts %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Post slug</th>
+                    <th>Guests</th>
+                    <th>Last granted</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for post in posts %}
+                <tr>
+                    <td><code>{{ post.slug }}</code></td>
+                    <td>
+                        <div class="guest-badges">
+                            {% if post.referrers %}
+                                {% for guest in post.referrers %}
+                                <span class="guest-pill">
+                                    {{ guest.referrer }}
+                                    <button class="guest-remove" data-slug="{{ post.slug }}" data-ref="{{ guest.referrer }}">×</button>
+                                </span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="empty">No guests yet</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>{{ post.last_assigned or '—' }}</td>
+                    <td>
+                        <button class="post-add" data-slug="{{ post.slug }}">+ Add guest</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No post access granted yet. Use the form above to add the first guest.</p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2>All Referrers</h2>
+        <form id="ref-add-form" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+            <input type="text" id="new-referrer" placeholder="Enter new ref (e.g. patreon_01_01)" required style="flex:1;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;">
+            <button type="submit" style="padding:0.6rem 1rem;border:none;border-radius:10px;background:#16a34a;color:#fff;font-weight:600;cursor:pointer;">Add referrer</button>
+        </form>
+        {% if referrers %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Referrer</th>
+                    <th>Status</th>
+                    <th>Added</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ref in referrers %}
+                <tr>
+                    <td>{{ ref.referrer }}</td>
+                    <td>
+                        <span class="badge {{ 'active' if ref.active else 'inactive' }}">
+                            {{ 'Active' if ref.active else 'Inactive' }}
+                        </span>
+                    </td>
+                    <td>{{ ref.created_at or '—' }}</td>
+                    <td>
+                        {% if ref.active %}
+                        <button class="ref-action" data-ref="{{ ref.referrer }}">Deactivate</button>
+                        {% else %}
+                        <span class="empty">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No referrers found.</p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2>Latest Tokens</h2>
+        {% if tokens %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Token</th>
+                    <th>Slug</th>
+                    <th>Referrer</th>
+                    <th>Created</th>
+                    <th>Expires</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for token in tokens %}
+                <tr>
+                    <td class="token">{{ token.token }}</td>
+                    <td>{{ token.slug }}</td>
+                    <td>{{ token.referrer or '—' }}</td>
+                    <td>{{ token.created_at or '—' }}</td>
+                    <td>{{ token.expires_at or 'Never' }}</td>
+                    <td>
+                        <span class="badge {{ 'active' if token.valid else 'inactive' }}">
+                            {{ 'Valid' if token.valid else 'Revoked' }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if token.valid %}
+                        <button class="revoke-btn" data-token="{{ token.token }}">Revoke</button>
+                        {% else %}
+                        <span class="empty">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No tokens created yet.</p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2>Privacy & Housekeeping</h2>
+        <ul style="margin:0;padding-left:1.2rem;color:#475569;line-height:1.5;">
+            <li>Every access log stores IP, user agent, and referer domain for leak detection. Adjust <code>ACCESS_LOG_RETENTION_DAYS</code> or run the cleanup API if you need shorter retention.</li>
+            <li>Let your members know that accesses are tracked; update your privacy policy accordingly.</li>
+            <li>Use HTTPS + a reverse proxy/WAF in production, and rotate the Basic/ADMIN keys periodically.</li>
+        </ul>
+    </section>
+</body>
+<script>
+const form = document.getElementById('generator-form');
+const resultBox = document.getElementById('generator-result');
+
+function showResult(message, isError = false) {
+    resultBox.innerHTML = '';
+    const box = document.createElement('div');
+    box.style.padding = '0.8rem 1rem';
+    box.style.borderRadius = '10px';
+    box.style.marginTop = '0.5rem';
+    box.style.background = isError ? '#fee2e2' : '#ecfccb';
+    box.style.color = isError ? '#991b1b' : '#1b4332';
+    box.textContent = message;
+    resultBox.appendChild(box);
+}
+
+function appendCopyableLink(url) {
+    resultBox.innerHTML = '';
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.flexDirection = 'column';
+    wrapper.style.gap = '0.5rem';
+    wrapper.style.marginTop = '0.5rem';
+    const linkBox = document.createElement('div');
+    linkBox.style.padding = '0.8rem 1rem';
+    linkBox.style.borderRadius = '10px';
+    linkBox.style.background = '#ecfccb';
+    linkBox.style.border = '1px solid #bbf7d0';
+    linkBox.style.fontFamily = '"SFMono-Regular", Consolas, monospace';
+    linkBox.textContent = url;
+    const btn = document.createElement('button');
+    btn.textContent = 'Copy link';
+    btn.style.alignSelf = 'flex-start';
+    btn.style.padding = '0.5rem 1rem';
+    btn.style.borderRadius = '8px';
+    btn.style.border = 'none';
+    btn.style.background = '#2563eb';
+    btn.style.color = '#fff';
+    btn.style.cursor = 'pointer';
+    btn.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(url);
+        btn.textContent = 'Copied!';
+        setTimeout(() => (btn.textContent = 'Copy link'), 1500);
+    });
+    wrapper.appendChild(linkBox);
+    wrapper.appendChild(btn);
+    resultBox.appendChild(wrapper);
+}
+
+form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const slug = document.getElementById('gen-slug').value.trim();
+    const ref = document.getElementById('gen-ref').value.trim();
+    const days = document.getElementById('gen-days').value.trim();
+    const expiresAt = document.getElementById('gen-date').value.trim();
+
+    if (!slug || !ref) {
+        showResult('Slug and referrer are required.', true);
+        return;
+    }
+
+    const params = new URLSearchParams();
+    params.set('ref', ref);
+    if (days) params.set('expires_days', days);
+    if (expiresAt) params.set('expires_at', expiresAt);
+
+    try {
+        showResult('Generating link…');
+        const resp = await fetch(`/generate/${encodeURIComponent(slug)}?${params.toString()}`, {
+            credentials: 'same-origin'
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            throw new Error(data.error || 'Failed to generate link');
+        }
+        appendCopyableLink(data.token_url);
+    } catch (err) {
+        showResult(err.message, true);
+    }
+});
+
+document.querySelectorAll('.revoke-btn').forEach((button) => {
+    button.addEventListener('click', async () => {
+        const token = button.getAttribute('data-token');
+        const confirmed = confirm(`Are you sure you want to revoke token ${token}? This action cannot be undone.`);
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            button.disabled = true;
+            button.textContent = 'Revoking…';
+            const resp = await fetch(`/revoke/${encodeURIComponent(token)}`, {
+                method: 'POST',
+                credentials: 'same-origin'
+            });
+            const data = await resp.json();
+            if (!resp.ok) {
+                throw new Error(data.error || 'Failed to revoke');
+            }
+            button.textContent = 'Revoked';
+            button.style.background = '#dcfce7';
+            button.style.color = '#166534';
+        } catch (err) {
+            alert(err.message);
+            button.disabled = false;
+            button.textContent = 'Revoke';
+        }
+    });
+});
+
+const postGrantForm = document.getElementById('post-grant-form');
+postGrantForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const slugInput = document.getElementById('post-slug');
+    const refInput = document.getElementById('post-ref');
+    const slug = slugInput.value.trim();
+    const ref = refInput.value.trim();
+    if (!slug || !ref) {
+        alert('Slug and referrer are required.');
+        return;
+    }
+    try {
+        slugInput.disabled = true;
+        refInput.disabled = true;
+        const resp = await fetch('/admin/referrers/slugs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ referrer: ref, slug })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            throw new Error(data.error || 'Failed to grant access');
+        }
+        alert(`Granted ${ref} access to ${slug}. Reload to see it assigned.`);
+        slugInput.value = '';
+        refInput.value = '';
+    } catch (err) {
+        alert(err.message);
+    } finally {
+        slugInput.disabled = false;
+        refInput.disabled = false;
+    }
+});
+
+document.querySelectorAll('.post-add').forEach((button) => {
+    button.addEventListener('click', async () => {
+        const slug = button.getAttribute('data-slug');
+        const ref = prompt(`Add guest for ${slug}:`);
+        if (!ref) return;
+        try {
+            button.disabled = true;
+            const resp = await fetch('/admin/referrers/slugs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ referrer: ref.trim(), slug })
+            });
+            const data = await resp.json();
+            if (!resp.ok) {
+                throw new Error(data.error || 'Failed to add guest');
+            }
+            alert(`Added ${ref} to ${slug}. Reload to see the update.`);
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            button.disabled = false;
+        }
+    });
+});
+
+document.querySelectorAll('.guest-remove').forEach((button) => {
+    button.addEventListener('click', async () => {
+        const slug = button.getAttribute('data-slug');
+        const ref = button.getAttribute('data-ref');
+        const confirmed = confirm(`Remove ${ref} from ${slug}?`);
+        if (!confirmed) return;
+        try {
+            button.disabled = true;
+            const resp = await fetch(`/admin/referrers/slugs/${encodeURIComponent(ref)}/${encodeURIComponent(slug)}`, {
+                method: 'DELETE',
+                credentials: 'same-origin'
+            });
+            const data = await resp.json();
+            if (!resp.ok) {
+                throw new Error(data.error || 'Failed to remove guest');
+            }
+            button.parentElement.remove();
+        } catch (err) {
+            alert(err.message);
+            button.disabled = false;
+        }
+    });
+});
+
+const refForm = document.getElementById('ref-add-form');
+refForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const input = document.getElementById('new-referrer');
+    const value = input.value.trim();
+    if (!value) {
+        alert('Referrer is required.');
+        return;
+    }
+    try {
+        input.disabled = true;
+        const resp = await fetch('/admin/referrers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ referrer: value })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            throw new Error(data.error || 'Failed to add referrer');
+        }
+        alert(`Added referrer ${value}. Reload to see it in the list.`);
+        input.value = '';
+    } catch (err) {
+        alert(err.message);
+    } finally {
+        input.disabled = false;
+    }
+});
+
+document.querySelectorAll('.ref-action').forEach((button) => {
+    button.addEventListener('click', async () => {
+        const ref = button.getAttribute('data-ref');
+        const confirmed = confirm(`Deactivate ${ref}?`);
+        if (!confirmed) {
+            return;
+        }
+        try {
+            button.disabled = true;
+            button.textContent = 'Updating…';
+            const resp = await fetch(`/admin/referrers/${encodeURIComponent(ref)}`, {
+                method: 'DELETE',
+                credentials: 'same-origin'
+            });
+            const data = await resp.json();
+            if (!resp.ok) {
+                throw new Error(data.error || 'Failed to deactivate');
+            }
+            button.textContent = 'Deactivated';
+            button.style.background = '#dcfce7';
+            button.style.color = '#166534';
+        } catch (err) {
+            alert(err.message);
+            button.disabled = false;
+            button.textContent = 'Deactivate';
+        }
+    });
+});
+</script>
+</html>

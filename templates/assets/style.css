@@ -1,0 +1,163 @@
+/* Default CSS for Ghost FriendLink Gateway */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.7;
+    color: #15171a;
+    background: #ffffff;
+    padding: 0;
+    margin: 0;
+}
+
+.container {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+.post-content {
+    font-size: 1.125rem;
+    word-wrap: break-word;
+}
+
+.post-content h1,
+.post-content h2,
+.post-content h3,
+.post-content h4,
+.post-content h5,
+.post-content h6 {
+    margin: 2rem 0 1rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.post-content h1 { font-size: 2.5rem; }
+.post-content h2 { font-size: 2rem; }
+.post-content h3 { font-size: 1.75rem; }
+.post-content h4 { font-size: 1.5rem; }
+
+.post-content p {
+    margin: 0 0 1.5rem;
+}
+
+.post-content a {
+    color: #15171a;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+}
+
+.post-content a:hover {
+    text-decoration-thickness: 2px;
+}
+
+.post-content img {
+    max-width: 100%;
+    height: auto;
+    margin: 2rem 0;
+    border-radius: 4px;
+}
+
+.post-content pre {
+    background: #f5f5f5;
+    border: 1px solid #e5eff5;
+    border-radius: 4px;
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+}
+
+.post-content code {
+    background: #f5f5f5;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-size: 0.9em;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.post-content pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.post-content blockquote {
+    border-left: 4px solid #e5eff5;
+    padding-left: 1.5rem;
+    margin: 1.5rem 0;
+    color: #738a94;
+    font-style: italic;
+}
+
+.post-content ul,
+.post-content ol {
+    margin: 1.5rem 0;
+    padding-left: 2rem;
+}
+
+.post-content li {
+    margin: 0.5rem 0;
+}
+
+.post-content hr {
+    border: none;
+    border-top: 1px solid #e5eff5;
+    margin: 2rem 0;
+}
+
+.post-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+}
+
+.post-content th,
+.post-content td {
+    padding: 0.75rem;
+    border: 1px solid #e5eff5;
+    text-align: left;
+}
+
+.post-content th {
+    background: #f5f5f5;
+    font-weight: 600;
+}
+
+.footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5eff5;
+    text-align: center;
+    color: #738a94;
+    font-size: 0.9375rem;
+}
+
+.footer a {
+    color: #738a94;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 2rem 1rem;
+    }
+    
+    .post-content {
+        font-size: 1rem;
+    }
+    
+    .post-content h1 { font-size: 2rem; }
+    .post-content h2 { font-size: 1.75rem; }
+    .post-content h3 { font-size: 1.5rem; }
+}
