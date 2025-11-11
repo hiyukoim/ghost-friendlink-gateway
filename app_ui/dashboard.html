@@ -185,137 +185,49 @@
     </section>
 
     <section class="card">
-        <h2>Posts & Guests</h2>
-        <p style="color:#64748b;font-size:0.9rem;">Treat each Ghost slug as a room. Add or remove guests (referrers) per post. Changing a post slug in Ghost requires minting new links.</p>
-        <form id="post-grant-form" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
-            <input type="text" id="post-slug" placeholder="Ghost slug (e.g. my-paid-post)" required style="flex:1;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;">
-            <input type="text" id="post-ref" placeholder="Referrer (guest)" required style="flex:1;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;">
-            <button type="submit" style="padding:0.6rem 1rem;border:none;border-radius:10px;background:#0ea5e9;color:#fff;font-weight:600;cursor:pointer;">Grant access</button>
-        </form>
-        {% if posts %}
+        <h2>Posts · Guests · Tokens</h2>
+        <p style="color:#64748b;font-size:0.9rem;">Each row is a Ghost slug + guest pair. The table shows the latest link (if any) and lets you revoke access instantly.</p>
+        {% if pairs %}
         <table>
             <thead>
                 <tr>
-                    <th>Post slug</th>
-                    <th>Guests</th>
-                    <th>Last granted</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for post in posts %}
-                <tr>
-                    <td><code>{{ post.slug }}</code></td>
-                    <td>
-                        <div class="guest-badges">
-                            {% if post.referrers %}
-                                {% for guest in post.referrers %}
-                                <span class="guest-pill">
-                                    {{ guest.referrer }}
-                                    <button class="guest-remove" data-slug="{{ post.slug }}" data-ref="{{ guest.referrer }}">×</button>
-                                </span>
-                                {% endfor %}
-                            {% else %}
-                                <span class="empty">No guests yet</span>
-                            {% endif %}
-                        </div>
-                    </td>
-                    <td>{{ post.last_assigned or '—' }}</td>
-                    <td>
-                        <button class="post-add" data-slug="{{ post.slug }}">+ Add guest</button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p class="empty">No post access granted yet. Use the form above to add the first guest.</p>
-        {% endif %}
-    </section>
-
-    <section class="card">
-        <h2>All Referrers</h2>
-        <form id="ref-add-form" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
-            <input type="text" id="new-referrer" placeholder="Enter new ref (e.g. patreon_01_01)" required style="flex:1;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;">
-            <button type="submit" style="padding:0.6rem 1rem;border:none;border-radius:10px;background:#16a34a;color:#fff;font-weight:600;cursor:pointer;">Add referrer</button>
-        </form>
-        {% if referrers %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Referrer</th>
-                    <th>Status</th>
-                    <th>Added</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ref in referrers %}
-                <tr>
-                    <td>{{ ref.referrer }}</td>
-                    <td>
-                        <span class="badge {{ 'active' if ref.active else 'inactive' }}">
-                            {{ 'Active' if ref.active else 'Inactive' }}
-                        </span>
-                    </td>
-                    <td>{{ ref.created_at or '—' }}</td>
-                    <td>
-                        {% if ref.active %}
-                        <button class="ref-action" data-ref="{{ ref.referrer }}">Deactivate</button>
-                        {% else %}
-                        <span class="empty">—</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p class="empty">No referrers found.</p>
-        {% endif %}
-    </section>
-
-    <section class="card">
-        <h2>Latest Tokens</h2>
-        {% if tokens %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Token</th>
-                    <th>Slug</th>
-                    <th>Referrer</th>
+                    <th>Latest token</th>
+                    <th>Post (slug)</th>
+                    <th>Guest / Referrer</th>
                     <th>Created</th>
-                    <th>Expires</th>
-                    <th>Status</th>
-                    <th></th>
+                    <th>Revoke</th>
                 </tr>
             </thead>
             <tbody>
-                {% for token in tokens %}
+                {% for pair in pairs %}
                 <tr>
-                    <td class="token">{{ token.token }}</td>
-                    <td>{{ token.slug }}</td>
-                    <td>{{ token.referrer or '—' }}</td>
-                    <td>{{ token.created_at or '—' }}</td>
-                    <td>{{ token.expires_at or 'Never' }}</td>
                     <td>
-                        <span class="badge {{ 'active' if token.valid else 'inactive' }}">
-                            {{ 'Valid' if token.valid else 'Revoked' }}
-                        </span>
+                        {% if pair.token %}
+                        <div class="token">
+                            {{ app_base_url }}/read/{{ pair.token.token }}
+                        </div>
+                        {% else %}
+                        <span class="empty">None yet</span>
+                        {% endif %}
+                    </td>
+                    <td><code>{{ pair.slug }}</code></td>
+                    <td>{{ pair.referrer }}</td>
+                    <td>
+                        {% if pair.token %}
+                        {{ pair.token.created_at or '—' }}
+                        {% else %}
+                        {{ pair.granted_at or '—' }}
+                        {% endif %}
                     </td>
                     <td>
-                        {% if token.valid %}
-                        <button class="revoke-btn" data-token="{{ token.token }}">Revoke</button>
-                        {% else %}
-                        <span class="empty">—</span>
-                        {% endif %}
+                        <button class="pair-revoke" data-slug="{{ pair.slug }}" data-ref="{{ pair.referrer }}">Revoke access</button>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% else %}
-        <p class="empty">No tokens created yet.</p>
+        <p class="empty">No guests have access yet. Mint a link to create a row.</p>
         {% endif %}
     </section>
 
@@ -389,15 +301,20 @@ form?.addEventListener('submit', async (event) => {
         return;
     }
 
-    const params = new URLSearchParams();
-    params.set('ref', ref);
-    if (days) params.set('expires_days', days);
-    if (expiresAt) params.set('expires_at', expiresAt);
-
     try {
         showResult('Generating link…');
-        const resp = await fetch(`/generate/${encodeURIComponent(slug)}?${params.toString()}`, {
-            credentials: 'same-origin'
+        const resp = await fetch('/admin/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                slug,
+                ref,
+                expires_days: days || null,
+                expires_at: expiresAt || null
+            })
         });
         const data = await resp.json();
         if (!resp.ok) {
@@ -439,72 +356,11 @@ document.querySelectorAll('.revoke-btn').forEach((button) => {
     });
 });
 
-const postGrantForm = document.getElementById('post-grant-form');
-postGrantForm?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const slugInput = document.getElementById('post-slug');
-    const refInput = document.getElementById('post-ref');
-    const slug = slugInput.value.trim();
-    const ref = refInput.value.trim();
-    if (!slug || !ref) {
-        alert('Slug and referrer are required.');
-        return;
-    }
-    try {
-        slugInput.disabled = true;
-        refInput.disabled = true;
-        const resp = await fetch('/admin/referrers/slugs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ referrer: ref, slug })
-        });
-        const data = await resp.json();
-        if (!resp.ok) {
-            throw new Error(data.error || 'Failed to grant access');
-        }
-        alert(`Granted ${ref} access to ${slug}. Reload to see it assigned.`);
-        slugInput.value = '';
-        refInput.value = '';
-    } catch (err) {
-        alert(err.message);
-    } finally {
-        slugInput.disabled = false;
-        refInput.disabled = false;
-    }
-});
-
-document.querySelectorAll('.post-add').forEach((button) => {
-    button.addEventListener('click', async () => {
-        const slug = button.getAttribute('data-slug');
-        const ref = prompt(`Add guest for ${slug}:`);
-        if (!ref) return;
-        try {
-            button.disabled = true;
-            const resp = await fetch('/admin/referrers/slugs', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'same-origin',
-                body: JSON.stringify({ referrer: ref.trim(), slug })
-            });
-            const data = await resp.json();
-            if (!resp.ok) {
-                throw new Error(data.error || 'Failed to add guest');
-            }
-            alert(`Added ${ref} to ${slug}. Reload to see the update.`);
-        } catch (err) {
-            alert(err.message);
-        } finally {
-            button.disabled = false;
-        }
-    });
-});
-
-document.querySelectorAll('.guest-remove').forEach((button) => {
+document.querySelectorAll('.pair-revoke').forEach((button) => {
     button.addEventListener('click', async () => {
         const slug = button.getAttribute('data-slug');
         const ref = button.getAttribute('data-ref');
-        const confirmed = confirm(`Remove ${ref} from ${slug}?`);
+        const confirmed = confirm(`Revoke ${ref}'s access to ${slug}? All tokens for this pair will stop working.`);
         if (!confirmed) return;
         try {
             button.disabled = true;
@@ -514,73 +370,13 @@ document.querySelectorAll('.guest-remove').forEach((button) => {
             });
             const data = await resp.json();
             if (!resp.ok) {
-                throw new Error(data.error || 'Failed to remove guest');
+                throw new Error(data.error || 'Failed to revoke access');
             }
-            button.parentElement.remove();
+            alert('Access revoked.');
+            location.reload();
         } catch (err) {
             alert(err.message);
             button.disabled = false;
-        }
-    });
-});
-
-const refForm = document.getElementById('ref-add-form');
-refForm?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const input = document.getElementById('new-referrer');
-    const value = input.value.trim();
-    if (!value) {
-        alert('Referrer is required.');
-        return;
-    }
-    try {
-        input.disabled = true;
-        const resp = await fetch('/admin/referrers', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify({ referrer: value })
-        });
-        const data = await resp.json();
-        if (!resp.ok) {
-            throw new Error(data.error || 'Failed to add referrer');
-        }
-        alert(`Added referrer ${value}. Reload to see it in the list.`);
-        input.value = '';
-    } catch (err) {
-        alert(err.message);
-    } finally {
-        input.disabled = false;
-    }
-});
-
-document.querySelectorAll('.ref-action').forEach((button) => {
-    button.addEventListener('click', async () => {
-        const ref = button.getAttribute('data-ref');
-        const confirmed = confirm(`Deactivate ${ref}?`);
-        if (!confirmed) {
-            return;
-        }
-        try {
-            button.disabled = true;
-            button.textContent = 'Updating…';
-            const resp = await fetch(`/admin/referrers/${encodeURIComponent(ref)}`, {
-                method: 'DELETE',
-                credentials: 'same-origin'
-            });
-            const data = await resp.json();
-            if (!resp.ok) {
-                throw new Error(data.error || 'Failed to deactivate');
-            }
-            button.textContent = 'Deactivated';
-            button.style.background = '#dcfce7';
-            button.style.color = '#166534';
-        } catch (err) {
-            alert(err.message);
-            button.disabled = false;
-            button.textContent = 'Deactivate';
         }
     });
 });

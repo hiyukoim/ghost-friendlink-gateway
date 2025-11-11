@@ -188,6 +188,25 @@ def check_admin_auth():
     return False
 
 
+def has_valid_admin_bearer():
+    if not ADMIN_API_KEY:
+        return True
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        return auth_header[7:] == ADMIN_API_KEY
+    return False
+
+
+def has_valid_admin_bearer():
+    if not ADMIN_API_KEY:
+        return True
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        provided_key = auth_header[7:]
+        return provided_key == ADMIN_API_KEY
+    return False
+
+
 def enforce_basic_auth():
     """Apply HTTP Basic auth when username/password are configured."""
     if not BASIC_AUTH_USERNAME or not BASIC_AUTH_PASSWORD:
@@ -227,6 +246,24 @@ def is_referrer_allowed(ref):
         return row is not None and row[0] == 1
 
 
+def ensure_referrer(ref):
+    """Create or reactivate a referrer automatically."""
+    if not ref:
+        return False
+    now = datetime.datetime.utcnow().isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO allowed_referrers (referrer, created_at, active) VALUES (?, ?, 1)",
+            (ref, now)
+        )
+        conn.execute(
+            "UPDATE allowed_referrers SET active = 1 WHERE referrer = ?",
+            (ref,)
+        )
+        conn.commit()
+    return True
+
+
 def is_post_allowed_for_ref(ref, slug):
     """Ensure referrer is allowed to access a specific Ghost post (by slug)."""
     if not ref or not slug:
@@ -237,6 +274,20 @@ def is_post_allowed_for_ref(ref, slug):
             (ref, slug)
         ).fetchone()
         return row is not None and row[0] == 1
+
+
+def ensure_post_access(ref, slug):
+    """Grant access to a slug if it doesn't exist yet."""
+    if not ref or not slug:
+        return False
+    now = datetime.datetime.utcnow().isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO referrer_posts (referrer, slug, active, created_at) VALUES (?, ?, 1, ?)",
+            (ref, slug, now)
+        )
+        conn.commit()
+    return True
 
 
 def extract_referer_domain(raw_referer):
@@ -354,67 +405,22 @@ def fetch_access_logs(limit=100, offset=0, ref=None, token=None, since=None, unt
 @app.route("/generate/<slug>")
 @limiter.limit(GENERATE_RATE_LIMIT)
 def generate(slug):
-    if not check_admin_auth():
-        return jsonify({"error": "Unauthorized"}), 401
+    if not has_valid_admin_bearer():
+        return jsonify({"error": "Admin API key required"}), 401
     ref = request.args.get("ref")
     
     if not ref:
         return jsonify({"error": "ref parameter is required"}), 400
-
-    if not is_referrer_allowed(ref):
-        return jsonify({"error": "Referrer not allowed"}), 403
     
-    if ref and not is_post_allowed_for_ref(ref, slug):
-        return jsonify({"error": "Slug not allowed for this referrer"}), 403
-    
-    token = str(uuid.uuid4())
-    created = datetime.datetime.utcnow()
-    
-    # Check for per-link expiration parameters
     expires_days_param = request.args.get("expires_days")
     expires_at_param = request.args.get("expires_at")
-    
-    if expires_at_param:
-        # Absolute date format: YYYY-MM-DD
-        try:
-            expires = datetime.datetime.fromisoformat(expires_at_param)
-            expires_iso = expires.isoformat()
-        except:
-            return jsonify({"error": "Invalid expires_at format. Use YYYY-MM-DD"}), 400
-    elif expires_days_param:
-        # Relative days
-        try:
-            days = int(expires_days_param)
-            if days == 0:
-                expires = None
-                expires_iso = None
-            else:
-                expires = created + datetime.timedelta(days=days)
-                expires_iso = expires.isoformat()
-        except:
-            return jsonify({"error": "Invalid expires_days format. Must be a number"}), 400
-    elif TOKEN_EXPIRY_DAYS == 0:
-        # Use default: no expiration
-        expires = None
-        expires_iso = None
-    else:
-        # Use default TOKEN_EXPIRY_DAYS
-        expires = created + datetime.timedelta(days=TOKEN_EXPIRY_DAYS)
-        expires_iso = expires.isoformat()
-
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            "INSERT INTO tokens (token, slug, referrer, created_at, expires_at, valid) VALUES (?, ?, ?, ?, ?, 1)",
-            (token, slug, ref, created.isoformat(), expires_iso)
-        )
-        conn.commit()
-
-    return jsonify({
-        "slug": slug,
-        "ref": ref,
-        "token_url": f"{APP_BASE_URL}/read/{token}",
-        "expires_at": expires_iso or "Never"
-    })
+    try:
+        result = create_token(slug, ref, expires_days_param, expires_at_param)
+        return jsonify(result)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except PermissionError as exc:
+        return jsonify({"error": str(exc)}), 403
 
 
 @app.route("/revoke/<token>", methods=["POST"])
@@ -817,6 +823,26 @@ def cleanup_access_logs():
         return jsonify({"status": "retention_cleanup", "deleted_rows": deleted, "days": max(ACCESS_LOG_RETENTION_DAYS, 0)})
 
 
+@app.route("/admin/generate", methods=["POST"])
+@limiter.limit(ADMIN_RATE_LIMIT)
+def admin_generate():
+    """Generate a link via dashboard (requires admin auth)."""
+    if not check_admin_auth():
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.get_json() or {}
+    slug = (data.get("slug") or "").strip()
+    ref = (data.get("ref") or "").strip()
+    expires_days = data.get("expires_days")
+    expires_at = data.get("expires_at")
+    try:
+        result = create_token(slug, ref, expires_days, expires_at)
+        return jsonify(result)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except PermissionError as exc:
+        return jsonify({"error": str(exc)}), 403
+
+
 @app.route("/admin/dashboard", methods=["GET"])
 @limiter.limit(ADMIN_RATE_LIMIT)
 def admin_dashboard():
@@ -826,60 +852,41 @@ def admin_dashboard():
         return basic_auth_response
     
     with sqlite3.connect(DB_PATH) as conn:
-        ref_rows = conn.execute(
-            "SELECT referrer, created_at, active FROM allowed_referrers ORDER BY created_at DESC"
-        ).fetchall()
-        post_rows = conn.execute(
+        pair_rows = conn.execute(
             "SELECT slug, referrer, created_at FROM referrer_posts WHERE active = 1 ORDER BY created_at DESC"
         ).fetchall()
         token_rows = conn.execute(
-            "SELECT token, slug, referrer, created_at, expires_at, valid FROM tokens ORDER BY created_at DESC LIMIT 50"
+            "SELECT token, slug, referrer, created_at, expires_at, valid FROM tokens ORDER BY created_at DESC"
         ).fetchall()
     
-    post_map = {}
-    for slug, ref, created_at in post_rows:
-        entry = post_map.setdefault(slug, {
-            "slug": slug,
-            "referrers": [],
-            "last_assigned": created_at
-        })
-        entry["referrers"].append({
-            "referrer": ref,
-            "created_at": created_at
-        })
-        if created_at and (entry["last_assigned"] is None or created_at > entry["last_assigned"]):
-            entry["last_assigned"] = created_at
+    latest_token_map = {}
+    for token, slug, referrer, created_at, expires_at, valid in token_rows:
+        key = (referrer, slug)
+        if key in latest_token_map:
+            continue
+        latest_token_map[key] = {
+            "token": token,
+            "created_at": created_at,
+            "expires_at": expires_at,
+            "valid": bool(valid)
+        }
     
-    posts = sorted(
-        post_map.values(),
-        key=lambda item: item["last_assigned"] or "",
-        reverse=True
-    )
+    pairs = [
+        {
+            "slug": slug,
+            "referrer": ref,
+            "granted_at": created_at,
+            "token": latest_token_map.get((ref, slug))
+        }
+        for slug, ref, created_at in pair_rows
+    ]
     
     site = get_ghost_site_settings()
     return render_template(
         "dashboard.html",
         site=site,
-        posts=posts,
-        referrers=[
-            {
-                "referrer": row[0],
-                "created_at": row[1],
-                "active": bool(row[2])
-            }
-            for row in ref_rows
-        ],
-        tokens=[
-            {
-                "token": row[0],
-                "slug": row[1],
-                "referrer": row[2],
-                "created_at": row[3],
-                "expires_at": row[4],
-                "valid": bool(row[5])
-            }
-            for row in token_rows
-        ],
+        pairs=pairs,
+        app_base_url=APP_BASE_URL,
         ghost_url=GHOST_URL,
     )
 
@@ -967,3 +974,53 @@ if __name__ == "__main__":
     host = os.environ.get("HOST", "0.0.0.0")
     debug = os.environ.get("APP_DEBUG", "false").lower() == "true"
     app.run(host=host, port=port, debug=debug)
+def create_token(slug, ref, expires_days_param=None, expires_at_param=None):
+    if not slug or not ref:
+        raise ValueError("slug and ref are required")
+    
+    ensure_referrer(ref)
+    ensure_post_access(ref, slug)
+    
+    if not is_referrer_allowed(ref):
+        raise PermissionError("Referrer not allowed")
+    if not is_post_allowed_for_ref(ref, slug):
+        raise PermissionError("Slug not allowed for this referrer")
+    
+    created = datetime.datetime.utcnow()
+    if expires_at_param:
+        try:
+            expires = datetime.datetime.fromisoformat(expires_at_param)
+            expires_iso = expires.isoformat()
+        except Exception:
+            raise ValueError("Invalid expires_at format. Use YYYY-MM-DD")
+    elif expires_days_param:
+        try:
+            days = int(expires_days_param)
+            if days == 0:
+                expires_iso = None
+            else:
+                expires = created + datetime.timedelta(days=days)
+                expires_iso = expires.isoformat()
+        except Exception:
+            raise ValueError("Invalid expires_days format. Must be a number")
+    elif TOKEN_EXPIRY_DAYS == 0:
+        expires_iso = None
+    else:
+        expires = created + datetime.timedelta(days=TOKEN_EXPIRY_DAYS)
+        expires_iso = expires.isoformat()
+    
+    token = str(uuid.uuid4())
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "INSERT INTO tokens (token, slug, referrer, created_at, expires_at, valid) VALUES (?, ?, ?, ?, ?, 1)",
+            (token, slug, ref, created.isoformat(), expires_iso)
+        )
+        conn.commit()
+    
+    return {
+        "slug": slug,
+        "ref": ref,
+        "token": token,
+        "token_url": f"{APP_BASE_URL}/read/{token}",
+        "expires_at": expires_iso or "Never"
+    }

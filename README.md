@@ -86,7 +86,7 @@ Coolify's Developer View allows you to copy and paste multiple environment varia
    - Fill in optional values if needed
 5. Click **Save**
 
-![Coolify Environment Variables Developer View](https://media.cleanshot.cloud/media/1683/Y0JQPPgd0KaKGtS5OF870KKNIl5I6xPWqEBDvbBi.jpeg?Expires=1762839996&Signature=fdwud7iiM6BmNX6bNMmEyrEKbI0REaEuP3gAiy0nBRc9AxyEHJPeVf~XejseP8YTHqUzfjOdM2Up9K8i0YHjI-RwxElPlhQ~W75TVQft2QhZnA6mb0pbnZEjKAjnp47fsyRYl0vq1wT38kA612b89vDQiD7T45AMO2dG-5uktDvuLnJ7yTEcaseYmgXOhHAySnuePzUZTXK98CaUkaE3QAenTygiyAJ29Pw8qpkyiI4aBzxEQA3k1kYLPg4XkURtq~j72LV1YNpW-uHPz6t3FsSuahnrHrbJ5MObLdSOqWmituCZ1xbZslCxRH7JH1EXpzD38A1OCfIGxPk6REYkkQ__&Key-Pair-Id=K269JMAT9ZF4GZ)
+![Coolify Environment Variables Developer View](https://media.publit.io/file/hiyukoim/Github/CleanShot-2025-11-10-at-17.58.46.jpeg)
 
 *Screenshot showing Coolify's Developer View where you can paste multiple environment variables at once*
 
@@ -169,7 +169,7 @@ GET /generate/my-paid-post?ref=patreon_01_01
 - `expires_days` (optional): Override default expiration with relative days (e.g., `7` for 7 days). Leave empty for “never expires”.
 - `expires_at` (optional): Override default expiration with an absolute date (`YYYY-MM-DD`, e.g., `2025-12-31`). Mutually exclusive with `expires_days`.
 
-> A referrer must have the target `slug` registered in its allowlist; otherwise `/generate` will return `403 Slug not allowed for this referrer`.
+> When using the dashboard, the guest and slug are auto-added to the allowlist before the link is generated. If you call this endpoint directly, make sure the referrer has the slug assigned first—otherwise you’ll get `403 Slug not allowed for this referrer`.
 > Treat `ref` as “who or where this link belongs to” (e.g., subscriber email, platform handle, campaign code). Pick a stable identifier so you can trace leaks easily.
 
 **Examples:**
@@ -283,7 +283,7 @@ Authorization: Bearer <ADMIN_API_KEY>
 
 #### Post Access (Ghost slug allowlist)
 
-Treat each Ghost slug as a room; you decide which guests (referrers) can enter. Assign the slug to every guest who should have a key before minting links. Guests with zero allowed slugs cannot generate or read any posts. If you rename the slug in Ghost, reassign that slug (and mint new links) because existing tokens will point to the old URL.
+Treat each Ghost slug as a room; you decide which guests (referrers) can enter. The dashboard auto-grants the slug when you mint a link, but you can also use these APIs to pre-provision or script access. If you rename the slug in Ghost, reassign that slug (and mint new links) because existing tokens will point to the old URL.
 
 **List slugs for a referrer**
 ```
@@ -311,7 +311,7 @@ Authorization: Bearer <ADMIN_API_KEY>
 
 #### Dashboard Snapshot
 
-- `GET /admin/dashboard` — Minimal HTML dashboard guarded by HTTP Basic auth (username/password come from `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD`; the password defaults to `ADMIN_API_KEY`). The “Posts & Guests” card comes first: pick a Ghost slug, see its guests, add/remove guests, then mint or revoke share links. Additional cards let you manage the referrer list and view recent tokens.
+- `GET /admin/dashboard` — Minimal HTML dashboard guarded by HTTP Basic auth (username/password come from `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD`; the password defaults to `ADMIN_API_KEY`). The “Posts & Guests” card comes first: pick a Ghost slug, see its guests, add/remove guests, then mint or revoke share links. The generator automatically creates guests/slugs as needed so you can copy a link instantly; additional cards show recent tokens plus housekeeping tips.
 
 #### Access Statistics
 
