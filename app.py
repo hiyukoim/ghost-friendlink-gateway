@@ -12,7 +12,7 @@ app = Flask(
 )
 APP_UI_FOLDER = os.path.join(app.root_path, "app_ui")
 if os.path.isdir(APP_UI_FOLDER):
-    app.jinja_loader.searchpath.append(APP_UI_FOLDER)
+    app.jinja_loader.searchpath.insert(0, APP_UI_FOLDER)
 limiter = Limiter(get_remote_address, app=app, default_limits=[])
 
 DB_PATH = "data/tokens.db"
@@ -858,7 +858,7 @@ def admin_dashboard():
     
     site = get_ghost_site_settings()
     return render_template(
-        "app_ui/dashboard.html",
+        "dashboard.html",
         site=site,
         posts=posts,
         referrers=[
@@ -959,7 +959,7 @@ def list_tokens():
 
 @app.route("/")
 def index():
-    return render_template("app_ui/index.html")
+    return render_template("index.html")
 
 
 if __name__ == "__main__":

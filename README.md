@@ -86,7 +86,7 @@ Coolify's Developer View allows you to copy and paste multiple environment varia
    - Fill in optional values if needed
 5. Click **Save**
 
-![Coolify Environment Variables Developer View](https://share.cleanshot.com/9TmBCFwVdQLZhHn8cRJx)
+![Coolify Environment Variables Developer View](https://media.cleanshot.cloud/media/1683/Y0JQPPgd0KaKGtS5OF870KKNIl5I6xPWqEBDvbBi.jpeg?Expires=1762839996&Signature=fdwud7iiM6BmNX6bNMmEyrEKbI0REaEuP3gAiy0nBRc9AxyEHJPeVf~XejseP8YTHqUzfjOdM2Up9K8i0YHjI-RwxElPlhQ~W75TVQft2QhZnA6mb0pbnZEjKAjnp47fsyRYl0vq1wT38kA612b89vDQiD7T45AMO2dG-5uktDvuLnJ7yTEcaseYmgXOhHAySnuePzUZTXK98CaUkaE3QAenTygiyAJ29Pw8qpkyiI4aBzxEQA3k1kYLPg4XkURtq~j72LV1YNpW-uHPz6t3FsSuahnrHrbJ5MObLdSOqWmituCZ1xbZslCxRH7JH1EXpzD38A1OCfIGxPk6REYkkQ__&Key-Pair-Id=K269JMAT9ZF4GZ)
 
 *Screenshot showing Coolify's Developer View where you can paste multiple environment variables at once*
 
