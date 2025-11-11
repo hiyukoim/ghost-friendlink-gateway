@@ -30,8 +30,8 @@ SITE_LOGO_URL = os.getenv("SITE_LOGO_URL", "").strip()
 TOKEN_EXPIRY_DAYS = int(os.getenv("TOKEN_EXPIRY_DAYS", "0"))  # Default: no expiration. Set to N for N-day default.
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "").strip()
 ACCESS_LOG_RETENTION_DAYS = int(os.getenv("ACCESS_LOG_RETENTION_DAYS", "60"))  # 60-day retention by default. 0 disables logging, negative keeps forever.
-BASIC_AUTH_USERNAME = os.getenv("BASIC_AUTH_USERNAME", "admin").strip()
-BASIC_AUTH_PASSWORD = os.getenv("BASIC_AUTH_PASSWORD", ADMIN_API_KEY or "admin").strip()
+ADMIN_LOGIN_USERNAME = os.getenv("ADMIN_LOGIN_USERNAME", "admin").strip()
+ADMIN_LOGIN_PASSWORD = os.getenv("ADMIN_LOGIN_PASSWORD", ADMIN_API_KEY or "admin").strip()
 DEFAULT_RATE_LIMIT = os.getenv("DEFAULT_RATE_LIMIT", "240/hour")
 ADMIN_RATE_LIMIT = os.getenv("ADMIN_RATE_LIMIT", "60/minute")
 GENERATE_RATE_LIMIT = os.getenv("GENERATE_RATE_LIMIT", "20/minute")
@@ -271,11 +271,11 @@ def admin_login():
         username_value = (request.form.get("username") or "").strip()
         password = request.form.get("password") or ""
         next_url = request.form.get("next") or next_param
-        if not BASIC_AUTH_USERNAME or not BASIC_AUTH_PASSWORD:
+        if not ADMIN_LOGIN_USERNAME or not ADMIN_LOGIN_PASSWORD:
             error = "Server admin credentials are not configured."
         elif (
-            hmac.compare_digest(username_value, BASIC_AUTH_USERNAME)
-            and hmac.compare_digest(password, BASIC_AUTH_PASSWORD)
+            hmac.compare_digest(username_value, ADMIN_LOGIN_USERNAME)
+            and hmac.compare_digest(password, ADMIN_LOGIN_PASSWORD)
         ):
             session.clear()
             session["is_admin"] = True
@@ -1107,7 +1107,7 @@ def admin_dashboard():
         app_base_url=APP_BASE_URL,
         ghost_url=GHOST_URL,
         csrf_token=get_or_create_csrf_token(),
-        admin_username=session.get("admin_username", BASIC_AUTH_USERNAME),
+        admin_username=session.get("admin_username", ADMIN_LOGIN_USERNAME),
         max_bulk_refs=MAX_BULK_REFS,
     )
 

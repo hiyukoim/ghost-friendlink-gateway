@@ -45,11 +45,11 @@ Designed to run seamlessly on **Coolify** or any Docker-based host.
    - Replace `https://your-ghost-blog.com` with your Ghost blog URL
    - Replace `your-id:your-secret` with your Ghost Admin API key
    - **Set `ADMIN_API_KEY` to a strong, random value (used by `/generate` and admin APIs)**
-   - **Set `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD` for the dashboard login**
+   - **Set `ADMIN_LOGIN_USERNAME` / `ADMIN_LOGIN_PASSWORD` for the dashboard login**
    - (Optional) set `FLASK_SECRET` to a random string for session cookies (defaults to the admin key)
    - Replace `https://your-gateway-domain.com` with your gateway's public URL
    - Fill in optional values if needed
-   - Run `openssl rand -hex 32` and paste the output into `ADMIN_API_KEY` (and optionally `FLASK_SECRET`). Use a separate random string for `BASIC_AUTH_PASSWORD` so the dashboard login differs from the API key.
+   - Run `openssl rand -hex 32` and paste the output into `ADMIN_API_KEY` (and optionally `FLASK_SECRET`). Use a separate random string for `ADMIN_LOGIN_PASSWORD` so the dashboard login differs from the API key.
    
    **Note:** The `.env` file contains sensitive information and is automatically ignored by git (see `.gitignore`). The `env.template` file is a safe template that you can copy.
 
@@ -72,7 +72,7 @@ Designed to run seamlessly on **Coolify** or any Docker-based host.
 
 4. **Access the app:**
    The app will be available at `http://localhost:5000`
-5. **Sign into the dashboard:** Visit `http://localhost:5000/admin/login`, enter `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD`, and you’ll be redirected to `/admin/dashboard`.
+5. **Sign into the dashboard:** Visit `http://localhost:5000/admin/login`, enter `ADMIN_LOGIN_USERNAME` / `ADMIN_LOGIN_PASSWORD`, and you’ll be redirected to `/admin/dashboard`.
 
 ### In Coolify
 
@@ -91,7 +91,7 @@ Coolify's Developer View allows you to copy and paste multiple environment varia
    - Replace `https://your-ghost-blog.com` with your Ghost blog URL
    - Replace `your-id:your-secret` with your Ghost Admin API key
    - **Set `ADMIN_API_KEY` (required) with a strong random string; the dashboard generator and `/generate` use this key**
-   - **Set `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD` (required) for the dashboard login**
+   - **Set `ADMIN_LOGIN_USERNAME` / `ADMIN_LOGIN_PASSWORD` (required) for the dashboard login**
    - (Optional) set `FLASK_SECRET` to a random string for session cookies (defaults to the admin key)
    - Replace `https://your-gateway-domain.com` with your gateway's public URL
    - Fill in optional values if needed
@@ -101,7 +101,7 @@ Coolify's Developer View allows you to copy and paste multiple environment varia
 
 *Screenshot showing Coolify's Developer View where you can paste multiple environment variables at once*
 
-After deployment, open `https://your-gateway-domain.com/admin/login`, authenticate with `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD`, and you’ll land on the dashboard.
+After deployment, open `https://your-gateway-domain.com/admin/login`, authenticate with `ADMIN_LOGIN_USERNAME` / `ADMIN_LOGIN_PASSWORD`, and you’ll land on the dashboard.
 #### Manual Setup (Alternative)
 
 If you prefer to add variables one by one, go to **Configuration** → **Environment Variables** and add the following:
@@ -127,8 +127,8 @@ If you prefer to add variables one by one, go to **Configuration** → **Environ
 | `SITE_LOGO_URL` | (empty) | Override logo used in metadata |
 | `TOKEN_EXPIRY_DAYS` | `0` | Token expiration in days. `0` keeps links forever (default) |
 | `ACCESS_LOG_RETENTION_DAYS` | `60` | How long to keep access logs. `0` disables logging. Negative keeps forever. |
-| `BASIC_AUTH_USERNAME` | `admin` | Username for the `/admin/login` form |
-| `BASIC_AUTH_PASSWORD` | (empty) | Password for `/admin/login` (defaults to `ADMIN_API_KEY` if left empty) |
+| `ADMIN_LOGIN_USERNAME` | `admin` | Username for the `/admin/login` form |
+| `ADMIN_LOGIN_PASSWORD` | (empty) | Password for `/admin/login` (defaults to `ADMIN_API_KEY` if left empty) |
 | `FLASK_SECRET` | (empty) | Secret key for session cookies (defaults to `ADMIN_API_KEY` or fallback) |
 | `ADMIN_SESSION_HOURS` | `12` | How long admin sessions stay valid before requiring a new login |
 | `DEFAULT_RATE_LIMIT` | `240/hour` | Baseline rate limit for anonymous/read endpoints |
@@ -159,8 +159,8 @@ If you prefer to add variables one by one, go to **Configuration** → **Environ
 | `TOKEN_EXPIRY_DAYS` | (Optional) Token expiration in days. Set to `0` for no expiration | `0` (default: never expires). Set to `30` to enforce 30-day lifetime |
 | `ADMIN_API_KEY` | **Required.** API key for admin APIs and `/generate/<slug>` | Output of `openssl rand -hex 32` (64 hex chars) |
 | `ACCESS_LOG_RETENTION_DAYS` | (Optional) How long to keep access logs. `60` default, `0` disables logging, negative keeps forever | `60` |
-| `BASIC_AUTH_USERNAME` | (Optional) Username for `/admin/login` | `admin` |
-| `BASIC_AUTH_PASSWORD` | (Optional) Password for `/admin/login`. Defaults to `ADMIN_API_KEY` when unset | Separate random string |
+| `ADMIN_LOGIN_USERNAME` | (Optional) Username for `/admin/login` | `admin` |
+| `ADMIN_LOGIN_PASSWORD` | (Optional) Password for `/admin/login`. Defaults to `ADMIN_API_KEY` when unset | Separate random string |
 | `FLASK_SECRET` | (Optional) Secret used for session cookies | Another `openssl rand -hex 32` |
 | `ADMIN_SESSION_HOURS` | (Optional) Validity window for admin sessions | `12` |
 | `DEFAULT_RATE_LIMIT` | Default rate limit applied globally (`240/hour` by default) | `240/hour` |
@@ -346,7 +346,7 @@ Authorization: Bearer <ADMIN_API_KEY>
 
 #### Dashboard Snapshot
 
-- `GET /admin/dashboard` — Minimal HTML dashboard protected by the `/admin/login` form (username/password come from `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD`; the password defaults to `ADMIN_API_KEY`). The “Posts & Guests” card comes first: pick a Ghost slug, see its guests, add/remove guests, then mint or revoke share links. The generator automatically creates guests/slugs as needed so you can copy a link instantly; additional cards show recent tokens plus housekeeping tips.
+- `GET /admin/dashboard` — Minimal HTML dashboard protected by the `/admin/login` form (username/password come from `ADMIN_LOGIN_USERNAME` / `ADMIN_LOGIN_PASSWORD`; the password defaults to `ADMIN_API_KEY`). The “Posts & Guests” card comes first: pick a Ghost slug, see its guests, add/remove guests, then mint or revoke share links. The generator automatically creates guests/slugs as needed so you can copy a link instantly; additional cards show recent tokens plus housekeeping tips.
 
 #### Access Statistics
 
