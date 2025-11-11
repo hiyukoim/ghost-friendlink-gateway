@@ -18,8 +18,10 @@
         .heading {
             display: flex;
             justify-content: space-between;
-            align-items: baseline;
+            align-items: center;
             margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
         .card {
             background: #fff;
@@ -145,12 +147,21 @@
         }
     </style>
 </head>
-<body>
+<body data-csrf="{{ csrf_token }}" data-admin="{{ admin_username }}">
     <div class="heading">
-        <h1>{{ site.title or "FriendLink Dashboard" }}</h1>
-        {% if ghost_url %}
-        <a href="{{ ghost_url }}" target="_blank" rel="noopener">Visit Ghost</a>
-        {% endif %}
+        <div>
+            <h1>{{ site.title or "FriendLink Dashboard" }}</h1>
+            <p style="margin:0;color:#94a3b8;font-size:0.9rem;">Signed in as {{ admin_username }}</p>
+        </div>
+        <div style="display:flex;gap:0.75rem;align-items:center;">
+            {% if ghost_url %}
+            <a href="{{ ghost_url }}" target="_blank" rel="noopener">Visit Ghost</a>
+            {% endif %}
+            <form method="post" action="{{ url_for('admin_logout') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" style="padding:0.45rem 0.9rem;border-radius:10px;border:1px solid #cbd5f5;background:transparent;color:#0f172a;font-weight:600;cursor:pointer;">Log out</button>
+            </form>
+        </div>
     </div>
 
     <section class="card">
@@ -162,8 +173,8 @@
                 <textarea id="gen-slug" rows="2" required placeholder="my-paid-post" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;"></textarea>
             </label>
             <label>
-                <span>Guest / Referrer</span>
-                <textarea id="gen-ref" rows="2" required placeholder="user@example.com or patreon_01_01" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;"></textarea>
+                <span>Guest / Referrer (comma or newline separated for bulk)</span>
+                <textarea id="gen-ref" rows="3" required placeholder="alice@example.com, bob@example.com" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;"></textarea>
             </label>
             <div style="display:flex;gap:1rem;flex-wrap:wrap;">
                 <label style="flex:1 1 200px;">
@@ -178,7 +189,7 @@
             <button type="submit" style="padding:0.8rem 1.2rem;border:none;border-radius:10px;background:#2563eb;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;">Generate link</button>
         </form>
         <div style="margin-top:0.8rem;color:#94a3b8;font-size:0.85rem;">
-            <strong>Required:</strong> Post slug + Guest (referrer).<br>
+            <strong>Required:</strong> Post slug + Guest (referrer). Separate multiple guests with commas or newlines (up to {{ max_bulk_refs }} at once).<br>
             <strong>Optional:</strong> Expires (days) or Expires at. Leave empty for “never expires”.
         </div>
         <div id="generator-result" style="margin-top:1rem;"></div>
@@ -236,13 +247,21 @@
         <ul style="margin:0;padding-left:1.2rem;color:#475569;line-height:1.5;">
             <li>Every access log stores IP, user agent, and referer domain for leak detection. Adjust <code>ACCESS_LOG_RETENTION_DAYS</code> or run the cleanup API if you need shorter retention.</li>
             <li>Let your members know that accesses are tracked; update your privacy policy accordingly.</li>
-            <li>Use HTTPS + a reverse proxy/WAF in production, and rotate the Basic/ADMIN keys periodically.</li>
+            <li>Use HTTPS + a reverse proxy/WAF in production, and rotate the admin login/password + API key periodically.</li>
         </ul>
     </section>
 </body>
 <script>
 const form = document.getElementById('generator-form');
 const resultBox = document.getElementById('generator-result');
+const csrfToken = document.body.dataset.csrf || '';
+
+function withCsrf(headers = {}) {
+    if (csrfToken) {
+        headers['X-Admin-CSRF'] = csrfToken;
+    }
+    return headers;
+}
 
 function showResult(message, isError = false) {
     resultBox.innerHTML = '';
@@ -256,71 +275,108 @@ function showResult(message, isError = false) {
     resultBox.appendChild(box);
 }
 
-function appendCopyableLink(url) {
+function appendCopyableLinks(entries) {
     resultBox.innerHTML = '';
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
     wrapper.style.flexDirection = 'column';
-    wrapper.style.gap = '0.5rem';
+    wrapper.style.gap = '0.75rem';
     wrapper.style.marginTop = '0.5rem';
-    const linkBox = document.createElement('div');
-    linkBox.style.padding = '0.8rem 1rem';
-    linkBox.style.borderRadius = '10px';
-    linkBox.style.background = '#ecfccb';
-    linkBox.style.border = '1px solid #bbf7d0';
-    linkBox.style.fontFamily = '"SFMono-Regular", Consolas, monospace';
-    linkBox.textContent = url;
-    const btn = document.createElement('button');
-    btn.textContent = 'Copy link';
-    btn.style.alignSelf = 'flex-start';
-    btn.style.padding = '0.5rem 1rem';
-    btn.style.borderRadius = '8px';
-    btn.style.border = 'none';
-    btn.style.background = '#2563eb';
-    btn.style.color = '#fff';
-    btn.style.cursor = 'pointer';
-    btn.addEventListener('click', async () => {
-        await navigator.clipboard.writeText(url);
-        btn.textContent = 'Copied!';
-        setTimeout(() => (btn.textContent = 'Copy link'), 1500);
+
+    entries.forEach((entry) => {
+        const card = document.createElement('div');
+        card.style.padding = '0.8rem 1rem';
+        card.style.borderRadius = '10px';
+        card.style.background = '#ecfccb';
+        card.style.border = '1px solid #bbf7d0';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.gap = '0.4rem';
+
+        const meta = document.createElement('div');
+        meta.style.fontSize = '0.9rem';
+        meta.style.color = '#1b4332';
+        meta.innerHTML = `<strong>${entry.ref || 'Guest link'}</strong> · ${entry.slug || ''}`;
+
+        const linkBox = document.createElement('div');
+        linkBox.style.fontFamily = '"SFMono-Regular", Consolas, monospace';
+        linkBox.style.wordBreak = 'break-all';
+        linkBox.textContent = entry.token_url;
+
+        const btn = document.createElement('button');
+        btn.textContent = 'Copy link';
+        btn.style.alignSelf = 'flex-start';
+        btn.style.padding = '0.45rem 1rem';
+        btn.style.borderRadius = '8px';
+        btn.style.border = 'none';
+        btn.style.background = '#2563eb';
+        btn.style.color = '#fff';
+        btn.style.cursor = 'pointer';
+        btn.addEventListener('click', async () => {
+            await navigator.clipboard.writeText(entry.token_url);
+            btn.textContent = 'Copied!';
+            setTimeout(() => (btn.textContent = 'Copy link'), 1500);
+        });
+
+        card.appendChild(meta);
+        card.appendChild(linkBox);
+        card.appendChild(btn);
+        wrapper.appendChild(card);
     });
-    wrapper.appendChild(linkBox);
-    wrapper.appendChild(btn);
+
     resultBox.appendChild(wrapper);
 }
 
 form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const slug = document.getElementById('gen-slug').value.trim();
-    const ref = document.getElementById('gen-ref').value.trim();
+    const refRaw = document.getElementById('gen-ref').value;
+    const refs = refRaw
+        .split(/[\n,]/)
+        .map((value) => value.trim())
+        .filter(Boolean);
     const days = document.getElementById('gen-days').value.trim();
     const expiresAt = document.getElementById('gen-date').value.trim();
 
-    if (!slug || !ref) {
-        showResult('Slug and referrer are required.', true);
+    if (!slug || refs.length === 0) {
+        showResult('Slug and at least one referrer are required.', true);
         return;
     }
 
     try {
         showResult('Generating link…');
+        const payload = {
+            slug,
+            expires_days: days || null,
+            expires_at: expiresAt || null
+        };
+        if (refs.length === 1) {
+            payload.ref = refs[0];
+        } else {
+            payload.refs = refs;
+        }
+
         const resp = await fetch('/admin/generate', {
             method: 'POST',
-            headers: {
+            headers: withCsrf({
                 'Content-Type': 'application/json'
-            },
+            }),
             credentials: 'same-origin',
-            body: JSON.stringify({
-                slug,
-                ref,
-                expires_days: days || null,
-                expires_at: expiresAt || null
-            })
+            body: JSON.stringify(payload)
         });
         const data = await resp.json();
         if (!resp.ok) {
             throw new Error(data.error || 'Failed to generate link');
         }
-        appendCopyableLink(data.token_url);
+        const entries = Array.isArray(data.tokens)
+            ? data.tokens
+            : data.token_url
+                ? [data]
+                : [];
+        if (!entries.length) {
+            throw new Error('API did not return any tokens.');
+        }
+        appendCopyableLinks(entries);
     } catch (err) {
         showResult(err.message, true);
     }
@@ -339,6 +395,7 @@ document.querySelectorAll('.revoke-btn').forEach((button) => {
             button.textContent = 'Revoking…';
             const resp = await fetch(`/revoke/${encodeURIComponent(token)}`, {
                 method: 'POST',
+                headers: withCsrf(),
                 credentials: 'same-origin'
             });
             const data = await resp.json();
@@ -366,6 +423,7 @@ document.querySelectorAll('.pair-revoke').forEach((button) => {
             button.disabled = true;
             const resp = await fetch(`/admin/referrers/slugs/${encodeURIComponent(ref)}/${encodeURIComponent(slug)}`, {
                 method: 'DELETE',
+                headers: withCsrf(),
                 credentials: 'same-origin'
             });
             const data = await resp.json();

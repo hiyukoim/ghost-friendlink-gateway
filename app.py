@@ -1,5 +1,5 @@
 from flask import Flask, request, redirect, jsonify, Response, render_template, url_for, session
-import sqlite3, uuid, datetime, requests, os, jwt, csv, io
+import sqlite3, uuid, datetime, requests, os, jwt, csv, io, secrets, hmac
 from urllib.parse import urlparse
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -11,6 +11,7 @@ app = Flask(
     static_url_path="/assets",
 )
 app.secret_key = os.getenv("FLASK_SECRET", os.getenv("ADMIN_API_KEY", "change-me"))
+ADMIN_SESSION_HOURS = int(os.getenv("ADMIN_SESSION_HOURS", "12"))
 APP_UI_FOLDER = os.path.join(app.root_path, "app_ui")
 if os.path.isdir(APP_UI_FOLDER):
     app.jinja_loader.searchpath.insert(0, APP_UI_FOLDER)
@@ -37,6 +38,14 @@ GENERATE_RATE_LIMIT = os.getenv("GENERATE_RATE_LIMIT", "20/minute")
 ENFORCE_HTTPS = os.getenv("ENFORCE_HTTPS", "true").lower() == "true"
 PROXY_FORWARDED_FOR = int(os.getenv("PROXY_FORWARDED_FOR", "1"))
 PROXY_FORWARDED_PROTO = int(os.getenv("PROXY_FORWARDED_PROTO", "1"))
+MAX_BULK_REFS = int(os.getenv("MAX_BULK_REFS", "25"))
+
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=ENFORCE_HTTPS,
+)
+app.permanent_session_lifetime = datetime.timedelta(hours=ADMIN_SESSION_HOURS)
 
 if DEFAULT_RATE_LIMIT:
     limiter.default_limits = [DEFAULT_RATE_LIMIT]
@@ -183,16 +192,6 @@ def check_admin_auth():
         provided_key = auth_header[7:]
         if provided_key == ADMIN_API_KEY:
             return True
-    auth = request.authorization
-    if (
-        auth
-        and auth.type
-        and auth.type.lower() == "basic"
-        and BASIC_AUTH_USERNAME
-        and BASIC_AUTH_PASSWORD
-    ):
-        if auth.username == BASIC_AUTH_USERNAME and auth.password == BASIC_AUTH_PASSWORD:
-            return True
     return False
 
 
@@ -206,22 +205,44 @@ def has_valid_admin_bearer():
     return False
 
 
-def enforce_basic_auth():
-    """Apply HTTP Basic auth when username/password are configured."""
+def get_or_create_csrf_token():
+    token = session.get("csrf_token")
+    if not token:
+        token = secrets.token_hex(32)
+        session["csrf_token"] = token
+    return token
+
+
+def validate_csrf_token():
+    if not session.get("is_admin"):
+        return False
+    token = session.get("csrf_token")
+    if not token:
+        return False
+    provided = request.headers.get("X-Admin-CSRF") or request.form.get("csrf_token")
+    if not provided:
+        return False
+    return hmac.compare_digest(token, provided)
+
+
+def require_session_csrf(json=True):
+    """Ensure session-backed requests include a valid CSRF token."""
+    if not session.get("is_admin"):
+        return None
+    if has_valid_admin_bearer():
+        return None
+    if validate_csrf_token():
+        return None
+    if json:
+        return jsonify({"error": "Missing or invalid CSRF token"}), 400
+    return Response("Missing or invalid CSRF token", 400)
+
+
+def redirect_to_login():
     if session.get("is_admin"):
         return None
-    if not BASIC_AUTH_USERNAME or not BASIC_AUTH_PASSWORD:
-        return None
-    auth = request.authorization
-    if auth and auth.type and auth.type.lower() == "basic":
-        if auth.username == BASIC_AUTH_USERNAME and auth.password == BASIC_AUTH_PASSWORD:
-            session["is_admin"] = True
-            return None
-    return Response(
-        "Unauthorized",
-        401,
-        {"WWW-Authenticate": 'Basic realm="FriendLink Admin"'}
-    )
+    next_url = request.path
+    return redirect(url_for("admin_login", next=next_url))
 
 
 @app.before_request
@@ -234,6 +255,59 @@ def enforce_https_requirement():
     if request.path.startswith('/health'):
         return
     return jsonify({"error": "HTTPS is required"}), 400
+
+
+@app.route("/admin/login", methods=["GET", "POST"])
+@limiter.limit(ADMIN_RATE_LIMIT)
+def admin_login():
+    if session.get("is_admin"):
+        next_url = request.args.get("next") or url_for("admin_dashboard")
+        return redirect(next_url)
+    site = get_ghost_site_settings()
+    error = None
+    username_value = ""
+    next_param = request.args.get("next")
+    if request.method == "POST":
+        username_value = (request.form.get("username") or "").strip()
+        password = request.form.get("password") or ""
+        next_url = request.form.get("next") or next_param
+        if not BASIC_AUTH_USERNAME or not BASIC_AUTH_PASSWORD:
+            error = "Server admin credentials are not configured."
+        elif (
+            hmac.compare_digest(username_value, BASIC_AUTH_USERNAME)
+            and hmac.compare_digest(password, BASIC_AUTH_PASSWORD)
+        ):
+            session.clear()
+            session["is_admin"] = True
+            session["admin_username"] = username_value
+            session["login_at"] = datetime.datetime.utcnow().isoformat()
+            session["csrf_token"] = secrets.token_hex(32)
+            session.permanent = True
+            target = next_url or url_for("admin_dashboard")
+            if not target.startswith("/"):
+                target = url_for("admin_dashboard")
+            return redirect(target)
+        else:
+            error = "Invalid username or password."
+    next_url = next_param
+    return render_template(
+        "login.html",
+        site=site,
+        error=error,
+        next_url=next_url,
+        username=username_value,
+        ADMIN_SESSION_HOURS=ADMIN_SESSION_HOURS,
+    )
+
+
+@app.route("/admin/logout", methods=["POST"])
+@limiter.limit(ADMIN_RATE_LIMIT)
+def admin_logout():
+    csrf_error = require_session_csrf(json=False)
+    if csrf_error:
+        return csrf_error
+    session.clear()
+    return redirect(url_for("admin_login"))
 
 
 def is_referrer_allowed(ref):
@@ -292,6 +366,33 @@ def ensure_post_access(ref, slug):
     return True
 
 
+def normalize_ref_list(single_value=None, plural_value=None):
+    refs = []
+    def ingest(raw):
+        if raw is None:
+            return
+        if isinstance(raw, (list, tuple)):
+            for item in raw:
+                ingest(item)
+            return
+        if not isinstance(raw, str):
+            return
+        tokenized = raw.replace("\n", ",").split(",")
+        for token in tokenized:
+            cleaned = token.strip()
+            if cleaned:
+                refs.append(cleaned)
+    ingest(plural_value)
+    ingest(single_value)
+    deduped = []
+    seen = set()
+    for value in refs:
+        if value not in seen:
+            seen.add(value)
+            deduped.append(value)
+    return deduped
+
+
 def create_token(slug, ref, expires_days_param=None, expires_at_param=None):
     if not slug or not ref:
         raise ValueError("slug and ref are required")
@@ -342,6 +443,13 @@ def create_token(slug, ref, expires_days_param=None, expires_at_param=None):
         "token_url": f"{APP_BASE_URL}/read/{token}",
         "expires_at": expires_iso or "Never"
     }
+
+
+def create_tokens_for_refs(slug, refs, expires_days=None, expires_at=None):
+    tokens = []
+    for ref in refs:
+        tokens.append(create_token(slug, ref, expires_days, expires_at))
+    return tokens
 
 
 def extract_referer_domain(raw_referer):
@@ -465,15 +573,26 @@ def generate(slug):
     if not has_valid_admin_bearer():
         return jsonify({"error": "Admin API key required"}), 401
     ref = request.args.get("ref")
+    refs_query = request.args.getlist("refs")
+    refs = normalize_ref_list(ref, refs_query)
     
-    if not ref:
+    if not refs:
         return jsonify({"error": "ref parameter is required"}), 400
+    if len(refs) > MAX_BULK_REFS:
+        return jsonify({"error": f"Too many referrers supplied. Max {MAX_BULK_REFS} per request."}), 400
     
     expires_days_param = request.args.get("expires_days")
     expires_at_param = request.args.get("expires_at")
     try:
-        result = create_token(slug, ref, expires_days_param, expires_at_param)
-        return jsonify(result)
+        if len(refs) == 1:
+            result = create_token(slug, refs[0], expires_days_param, expires_at_param)
+            return jsonify(result)
+        tokens = create_tokens_for_refs(slug, refs, expires_days_param, expires_at_param)
+        return jsonify({
+            "slug": slug,
+            "count": len(tokens),
+            "tokens": tokens
+        })
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     except PermissionError as exc:
@@ -486,11 +605,10 @@ def generate(slug):
 @app.route("/revoke/<token>", methods=["POST"])
 def revoke(token):
     if not check_admin_auth():
-        auth_resp = enforce_basic_auth()
-        if auth_resp:
-            return auth_resp
-        if not session.get("is_admin"):
-            return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Unauthorized"}), 401
+    csrf_error = require_session_csrf()
+    if csrf_error:
+        return csrf_error
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("UPDATE tokens SET valid=0 WHERE token=?", (token,))
         conn.commit()
@@ -588,6 +706,9 @@ def add_referrer():
     """Add an allowed referrer."""
     if not check_admin_auth():
         return jsonify({"error": "Unauthorized"}), 401
+    csrf_error = require_session_csrf()
+    if csrf_error:
+        return csrf_error
     
     data = request.get_json()
     if not data or "referrer" not in data:
@@ -615,6 +736,9 @@ def delete_referrer(referrer):
     """Revoke (deactivate) a referrer."""
     if not check_admin_auth():
         return jsonify({"error": "Unauthorized"}), 401
+    csrf_error = require_session_csrf()
+    if csrf_error:
+        return csrf_error
     
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
@@ -655,6 +779,9 @@ def add_referrer_post():
     """Allow a referrer to access a specific post slug."""
     if not check_admin_auth():
         return jsonify({"error": "Unauthorized"}), 401
+    csrf_error = require_session_csrf()
+    if csrf_error:
+        return csrf_error
     data = request.get_json() or {}
     ref = (data.get("referrer") or "").strip()
     slug = (data.get("slug") or "").strip()
@@ -683,6 +810,9 @@ def delete_referrer_post(referrer, slug):
     """Deactivate a referrer/post pairing."""
     if not check_admin_auth():
         return jsonify({"error": "Unauthorized"}), 401
+    csrf_error = require_session_csrf()
+    if csrf_error:
+        return csrf_error
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
             "UPDATE referrer_posts SET active = 0 WHERE referrer = ? AND slug = ?",
@@ -861,6 +991,9 @@ def cleanup_access_logs():
     """Trigger access log cleanup (manual flush or custom retention)."""
     if not check_admin_auth():
         return jsonify({"error": "Unauthorized"}), 401
+    csrf_error = require_session_csrf()
+    if csrf_error:
+        return csrf_error
     
     payload = request.get_json(silent=True) or {}
     delete_all = bool(payload.get("delete_all"))
@@ -894,19 +1027,31 @@ def cleanup_access_logs():
 def admin_generate():
     """Generate a link via dashboard (requires admin auth)."""
     if not check_admin_auth():
-        auth_resp = enforce_basic_auth()
-        if auth_resp:
-            return auth_resp
-        if not session.get("is_admin"):
-            return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Unauthorized"}), 401
+    csrf_error = require_session_csrf()
+    if csrf_error:
+        return csrf_error
     data = request.get_json() or {}
     slug = (data.get("slug") or "").strip()
-    ref = (data.get("ref") or "").strip()
+    refs = normalize_ref_list(data.get("ref"), data.get("refs"))
+    if not slug:
+        return jsonify({"error": "slug is required"}), 400
+    if not refs:
+        return jsonify({"error": "ref (or refs) is required"}), 400
+    if len(refs) > MAX_BULK_REFS:
+        return jsonify({"error": f\"Too many referrers supplied. Max {MAX_BULK_REFS} per request.\"}), 400
     expires_days = data.get("expires_days")
     expires_at = data.get("expires_at")
     try:
-        result = create_token(slug, ref, expires_days, expires_at)
-        return jsonify(result)
+        if len(refs) == 1:
+            result = create_token(slug, refs[0], expires_days, expires_at)
+            return jsonify(result)
+        tokens = create_tokens_for_refs(slug, refs, expires_days, expires_at)
+        return jsonify({
+            "slug": slug,
+            "count": len(tokens),
+            "tokens": tokens
+        })
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     except PermissionError as exc:
@@ -920,9 +1065,9 @@ def admin_generate():
 @limiter.limit(ADMIN_RATE_LIMIT)
 def admin_dashboard():
     """Simple HTML dashboard showing referrers and recent tokens."""
-    basic_auth_response = enforce_basic_auth()
-    if basic_auth_response:
-        return basic_auth_response
+    redirect_response = redirect_to_login()
+    if redirect_response:
+        return redirect_response
     
     with sqlite3.connect(DB_PATH) as conn:
         pair_rows = conn.execute(
@@ -961,6 +1106,9 @@ def admin_dashboard():
         pairs=pairs,
         app_base_url=APP_BASE_URL,
         ghost_url=GHOST_URL,
+        csrf_token=get_or_create_csrf_token(),
+        admin_username=session.get("admin_username", BASIC_AUTH_USERNAME),
+        max_bulk_refs=MAX_BULK_REFS,
     )
 
 

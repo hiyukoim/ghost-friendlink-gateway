@@ -22,6 +22,8 @@ Designed to run seamlessly on **Coolify** or any Docker-based host.
 - 🗂️ CSV/JSON access-log exports + retention controls (automation-friendly)  
 - 🖼️ Rich metadata passthrough (favicon + OG/Twitter tags pulled from Ghost)  
 - 📋 Post-first dashboard: pick a Ghost slug, assign guests, mint links, revoke keys  
+- 🔐 `/admin/login` form issues secure sessions + CSRF tokens (no browser pop-ups)  
+- 👥 Bulk link minting: paste up to `MAX_BULK_REFS` comma/newline-separated guests and get copy-ready links in one click  
 - 🛡️ HTTPS enforcement + rate-limited admin endpoints to stop brute-force sharing  
 - ⚡ Compatible with Ghost v5+ and Python 3.11+
 
@@ -51,7 +53,6 @@ Designed to run seamlessly on **Coolify** or any Docker-based host.
    
    **Note:** The `.env` file contains sensitive information and is automatically ignored by git (see `.gitignore`). The `env.template` file is a safe template that you can copy.
 
-   **Generate strong secrets:** run `openssl rand -hex 32` (or `python - <<'PY'` snippets) and paste the output into `ADMIN_API_KEY` (required) and `FLASK_SECRET`. Reuse a different value for `BASIC_AUTH_PASSWORD` if you want the dashboard login to differ from the API key.
 
 3. **Build and run with Docker:**
    ```bash
@@ -71,6 +72,7 @@ Designed to run seamlessly on **Coolify** or any Docker-based host.
 
 4. **Access the app:**
    The app will be available at `http://localhost:5000`
+5. **Sign into the dashboard:** Visit `http://localhost:5000/admin/login`, enter `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD`, and you’ll be redirected to `/admin/dashboard`.
 
 ### In Coolify
 
@@ -99,6 +101,7 @@ Coolify's Developer View allows you to copy and paste multiple environment varia
 
 *Screenshot showing Coolify's Developer View where you can paste multiple environment variables at once*
 
+After deployment, open `https://your-gateway-domain.com/admin/login`, authenticate with `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD`, and you’ll land on the dashboard.
 #### Manual Setup (Alternative)
 
 If you prefer to add variables one by one, go to **Configuration** → **Environment Variables** and add the following:
@@ -124,9 +127,10 @@ If you prefer to add variables one by one, go to **Configuration** → **Environ
 | `SITE_LOGO_URL` | (empty) | Override logo used in metadata |
 | `TOKEN_EXPIRY_DAYS` | `0` | Token expiration in days. `0` keeps links forever (default) |
 | `ACCESS_LOG_RETENTION_DAYS` | `60` | How long to keep access logs. `0` disables logging. Negative keeps forever. |
-| `BASIC_AUTH_USERNAME` | `admin` | Username for dashboard Basic auth (blank disables Basic auth) |
-| `BASIC_AUTH_PASSWORD` | (empty) | Password for dashboard Basic auth (defaults to `ADMIN_API_KEY` if left empty) |
+| `BASIC_AUTH_USERNAME` | `admin` | Username for the `/admin/login` form |
+| `BASIC_AUTH_PASSWORD` | (empty) | Password for `/admin/login` (defaults to `ADMIN_API_KEY` if left empty) |
 | `FLASK_SECRET` | (empty) | Secret key for session cookies (defaults to `ADMIN_API_KEY` or fallback) |
+| `ADMIN_SESSION_HOURS` | `12` | How long admin sessions stay valid before requiring a new login |
 | `DEFAULT_RATE_LIMIT` | `240/hour` | Baseline rate limit for anonymous/read endpoints |
 | `ADMIN_RATE_LIMIT` | `60/minute` | Rate limit applied to admin APIs and dashboard actions |
 | `GENERATE_RATE_LIMIT` | `20/minute` | Rate limit for `/generate/<slug>` |
@@ -134,6 +138,7 @@ If you prefer to add variables one by one, go to **Configuration** → **Environ
 | `PROXY_FORWARDED_FOR` | `1` | Number of trusted proxy hops for `X-Forwarded-For` |
 | `PROXY_FORWARDED_PROTO` | `1` | Number of trusted proxy hops for `X-Forwarded-Proto` |
 | `PORT` | `5000` | Internal port (usually don't need to change) |
+| `MAX_BULK_REFS` | `25` | Upper bound for comma/newline-separated guests per bulk generation |
 
 4. (Optional) Map a persistent volume to `/app/data` for token storage  
 5. Deploy 🚀
@@ -154,13 +159,15 @@ If you prefer to add variables one by one, go to **Configuration** → **Environ
 | `TOKEN_EXPIRY_DAYS` | (Optional) Token expiration in days. Set to `0` for no expiration | `0` (default: never expires). Set to `30` to enforce 30-day lifetime |
 | `ADMIN_API_KEY` | **Required.** API key for admin APIs and `/generate/<slug>` | Output of `openssl rand -hex 32` (64 hex chars) |
 | `ACCESS_LOG_RETENTION_DAYS` | (Optional) How long to keep access logs. `60` default, `0` disables logging, negative keeps forever | `60` |
-| `BASIC_AUTH_USERNAME` | (Optional) Username for dashboard Basic auth (blank disables Basic auth, however, NOT RECOMMENDED) | `admin` |
-| `BASIC_AUTH_PASSWORD` | (Optional) Password for dashboard Basic auth. Defaults to `ADMIN_API_KEY` when unset | Separate random string |
+| `BASIC_AUTH_USERNAME` | (Optional) Username for `/admin/login` | `admin` |
+| `BASIC_AUTH_PASSWORD` | (Optional) Password for `/admin/login`. Defaults to `ADMIN_API_KEY` when unset | Separate random string |
 | `FLASK_SECRET` | (Optional) Secret used for session cookies | Another `openssl rand -hex 32` |
+| `ADMIN_SESSION_HOURS` | (Optional) Validity window for admin sessions | `12` |
 | `DEFAULT_RATE_LIMIT` | Default rate limit applied globally (`240/hour` by default) | `240/hour` |
 | `ADMIN_RATE_LIMIT` | Rate limit for admin endpoints | `60/minute` |
 | `GENERATE_RATE_LIMIT` | Rate limit for `/generate/<slug>` | `20/minute` |
 | `ENFORCE_HTTPS` | Require HTTPS requests (`true` by default) | `true` |
+| `MAX_BULK_REFS` | Maximum guests allowed per bulk generation (comma/newline-separated) | `25` |
 | `PROXY_FORWARDED_FOR` | Trusted proxy hops for `X-Forwarded-For` | `1` |
 | `PROXY_FORWARDED_PROTO` | Trusted proxy hops for `X-Forwarded-Proto` | `1` |
 | `PORT` | Internal server port | `5000` |
@@ -173,10 +180,11 @@ If you prefer to add variables one by one, go to **Configuration** → **Environ
 GET /generate/my-paid-post?ref=patreon_01_01
 ```
 
-> **Authentication:** This endpoint requires admin credentials (Bearer token or Basic auth). In the dashboard, your browser sends the Basic credentials automatically, so you just fill slug/ref and click “Generate” to get a copy-ready link.
+> **Authentication:** This endpoint requires admin credentials (Bearer token or an active session from `/admin/login`). The dashboard keeps your session cookie, so you just fill slug/ref and click “Generate” to get a copy-ready link.
 
 **Query Parameters:**
-- `ref` (required): Referrer identifier (e.g., `patreon_01_01`, `user@example.com`)
+- `ref` (required unless `refs` provided): Referrer identifier (e.g., `patreon_01_01`, `user@example.com`). You can pass a comma- or newline-separated list (`ref=user1,user2,user3`) to mint multiple links at once, up to `MAX_BULK_REFS`.
+- `refs` (optional): Repeatable query parameter (`?refs=user1&refs=user2`) if you prefer to send multiple values explicitly.
 - `expires_days` (optional): Override default expiration with relative days (e.g., `7` for 7 days). Leave empty for “never expires”.
 - `expires_at` (optional): Override default expiration with an absolute date (`YYYY-MM-DD`, e.g., `2025-12-31`). Mutually exclusive with `expires_days`.
 
@@ -188,16 +196,32 @@ GET /generate/my-paid-post?ref=patreon_01_01
 GET /generate/my-paid-post?ref=patreon_01_01
 GET /generate/my-paid-post?ref=user@example.com&expires_days=7
 GET /generate/my-paid-post?ref=patreon_01_01&expires_at=2025-12-31
+GET /generate/my-paid-post?ref=alice@example.com,bob@example.com,charlie@example.com
+GET /generate/my-paid-post?refs=patreon_tier1&refs=patreon_tier2
 ```
 
-Response:
+Response (single ref):
 
 ```json
 {
   "slug": "my-paid-post",
   "ref": "patreon_01_01",
   "token_url": "https://gateway.yourdomain.com/read/07ec6b8f-...",
-  "expires_at": "2025-12-10T12:00:00" // or "Never" if no expiration
+  "expires_at": "2025-12-10T12:00:00"
+}
+```
+
+Response (bulk refs):
+
+```json
+{
+  "slug": "my-paid-post",
+  "count": 3,
+  "tokens": [
+    {"ref": "alice@example.com", "token_url": "https://.../read/uuid-1", "token": "uuid-1", "expires_at": "Never"},
+    {"ref": "bob@example.com", "token_url": "https://.../read/uuid-2", "token": "uuid-2", "expires_at": "Never"},
+    {"ref": "charlie@example.com", "token_url": "https://.../read/uuid-3", "token": "uuid-3", "expires_at": "Never"}
+  ]
 }
 ```
 
@@ -207,7 +231,7 @@ Response:
 POST /revoke/<token>
 ```
 
-> Tip: The dashboard lists the latest tokens with a “Revoke” button (it reuses your Basic-auth session). Click revoke → confirm and it issues the `POST /revoke/<token>` call for you.
+> Tip: The dashboard lists the latest tokens with a “Revoke” button (it reuses your session from `/admin/login`). Click revoke → confirm and it issues the `POST /revoke/<token>` call for you.
 
 ### Access content
 
@@ -322,7 +346,7 @@ Authorization: Bearer <ADMIN_API_KEY>
 
 #### Dashboard Snapshot
 
-- `GET /admin/dashboard` — Minimal HTML dashboard guarded by HTTP Basic auth (username/password come from `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD`; the password defaults to `ADMIN_API_KEY`). The “Posts & Guests” card comes first: pick a Ghost slug, see its guests, add/remove guests, then mint or revoke share links. The generator automatically creates guests/slugs as needed so you can copy a link instantly; additional cards show recent tokens plus housekeeping tips.
+- `GET /admin/dashboard` — Minimal HTML dashboard protected by the `/admin/login` form (username/password come from `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD`; the password defaults to `ADMIN_API_KEY`). The “Posts & Guests” card comes first: pick a Ghost slug, see its guests, add/remove guests, then mint or revoke share links. The generator automatically creates guests/slugs as needed so you can copy a link instantly; additional cards show recent tokens plus housekeeping tips.
 
 #### Access Statistics
 
