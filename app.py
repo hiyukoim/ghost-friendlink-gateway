@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, jsonify, Response, render_template, url_for
+from flask import Flask, request, redirect, jsonify, Response, render_template, url_for, session
 import sqlite3, uuid, datetime, requests, os, jwt, csv, io
 from urllib.parse import urlparse
 from flask_limiter import Limiter
@@ -10,6 +10,7 @@ app = Flask(
     static_folder=os.path.join("templates", "assets"),
     static_url_path="/assets",
 )
+app.secret_key = os.getenv("FLASK_SECRET", os.getenv("ADMIN_API_KEY", "change-me"))
 APP_UI_FOLDER = os.path.join(app.root_path, "app_ui")
 if os.path.isdir(APP_UI_FOLDER):
     app.jinja_loader.searchpath.insert(0, APP_UI_FOLDER)
@@ -175,31 +176,29 @@ def get_ghost_site_settings():
 
 def check_admin_auth():
     """Check if request has valid admin API key."""
-    if not ADMIN_API_KEY:
-        return True  # No auth required if ADMIN_API_KEY not set
+    if session.get("is_admin"):
+        return True
     auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
+    if ADMIN_API_KEY and auth_header.startswith("Bearer "):
         provided_key = auth_header[7:]
-        return provided_key == ADMIN_API_KEY
+        if provided_key == ADMIN_API_KEY:
+            return True
     auth = request.authorization
-    if auth and auth.type and auth.type.lower() == "basic":
-        if BASIC_AUTH_USERNAME and auth.username == BASIC_AUTH_USERNAME and auth.password == BASIC_AUTH_PASSWORD:
+    if (
+        auth
+        and auth.type
+        and auth.type.lower() == "basic"
+        and BASIC_AUTH_USERNAME
+        and BASIC_AUTH_PASSWORD
+    ):
+        if auth.username == BASIC_AUTH_USERNAME and auth.password == BASIC_AUTH_PASSWORD:
             return True
     return False
 
 
 def has_valid_admin_bearer():
     if not ADMIN_API_KEY:
-        return True
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        return auth_header[7:] == ADMIN_API_KEY
-    return False
-
-
-def has_valid_admin_bearer():
-    if not ADMIN_API_KEY:
-        return True
+        return False
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         provided_key = auth_header[7:]
@@ -209,11 +208,14 @@ def has_valid_admin_bearer():
 
 def enforce_basic_auth():
     """Apply HTTP Basic auth when username/password are configured."""
+    if session.get("is_admin"):
+        return None
     if not BASIC_AUTH_USERNAME or not BASIC_AUTH_PASSWORD:
         return None
     auth = request.authorization
     if auth and auth.type and auth.type.lower() == "basic":
         if auth.username == BASIC_AUTH_USERNAME and auth.password == BASIC_AUTH_PASSWORD:
+            session["is_admin"] = True
             return None
     return Response(
         "Unauthorized",
@@ -288,6 +290,58 @@ def ensure_post_access(ref, slug):
         )
         conn.commit()
     return True
+
+
+def create_token(slug, ref, expires_days_param=None, expires_at_param=None):
+    if not slug or not ref:
+        raise ValueError("slug and ref are required")
+    
+    ensure_referrer(ref)
+    ensure_post_access(ref, slug)
+    
+    if not is_referrer_allowed(ref):
+        raise PermissionError("Referrer not allowed")
+    if not is_post_allowed_for_ref(ref, slug):
+        raise PermissionError("Slug not allowed for this referrer")
+    
+    created = datetime.datetime.utcnow()
+    if expires_at_param:
+        try:
+            expires = datetime.datetime.fromisoformat(expires_at_param)
+            expires_iso = expires.isoformat()
+        except Exception:
+            raise ValueError("Invalid expires_at format. Use YYYY-MM-DD")
+    elif expires_days_param:
+        try:
+            days = int(expires_days_param)
+            if days == 0:
+                expires_iso = None
+            else:
+                expires = created + datetime.timedelta(days=days)
+                expires_iso = expires.isoformat()
+        except Exception:
+            raise ValueError("Invalid expires_days format. Must be a number")
+    elif TOKEN_EXPIRY_DAYS == 0:
+        expires_iso = None
+    else:
+        expires = created + datetime.timedelta(days=TOKEN_EXPIRY_DAYS)
+        expires_iso = expires.isoformat()
+    
+    token = str(uuid.uuid4())
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "INSERT INTO tokens (token, slug, referrer, created_at, expires_at, valid) VALUES (?, ?, ?, ?, ?, 1)",
+            (token, slug, ref, created.isoformat(), expires_iso)
+        )
+        conn.commit()
+    
+    return {
+        "slug": slug,
+        "ref": ref,
+        "token": token,
+        "token_url": f"{APP_BASE_URL}/read/{token}",
+        "expires_at": expires_iso or "Never"
+    }
 
 
 def extract_referer_domain(raw_referer):
@@ -405,6 +459,9 @@ def fetch_access_logs(limit=100, offset=0, ref=None, token=None, since=None, unt
 @app.route("/generate/<slug>")
 @limiter.limit(GENERATE_RATE_LIMIT)
 def generate(slug):
+    if not ADMIN_API_KEY:
+        app.logger.warning("Rejected /generate call because ADMIN_API_KEY is not configured")
+        return jsonify({"error": "Admin API key is not configured on the server"}), 503
     if not has_valid_admin_bearer():
         return jsonify({"error": "Admin API key required"}), 401
     ref = request.args.get("ref")
@@ -421,10 +478,19 @@ def generate(slug):
         return jsonify({"error": str(exc)}), 400
     except PermissionError as exc:
         return jsonify({"error": str(exc)}), 403
+    except Exception:
+        app.logger.exception("Unexpected error while creating token via /generate")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @app.route("/revoke/<token>", methods=["POST"])
 def revoke(token):
+    if not check_admin_auth():
+        auth_resp = enforce_basic_auth()
+        if auth_resp:
+            return auth_resp
+        if not session.get("is_admin"):
+            return jsonify({"error": "Unauthorized"}), 401
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("UPDATE tokens SET valid=0 WHERE token=?", (token,))
         conn.commit()
@@ -828,7 +894,11 @@ def cleanup_access_logs():
 def admin_generate():
     """Generate a link via dashboard (requires admin auth)."""
     if not check_admin_auth():
-        return jsonify({"error": "Unauthorized"}), 401
+        auth_resp = enforce_basic_auth()
+        if auth_resp:
+            return auth_resp
+        if not session.get("is_admin"):
+            return jsonify({"error": "Unauthorized"}), 401
     data = request.get_json() or {}
     slug = (data.get("slug") or "").strip()
     ref = (data.get("ref") or "").strip()
@@ -841,6 +911,9 @@ def admin_generate():
         return jsonify({"error": str(exc)}), 400
     except PermissionError as exc:
         return jsonify({"error": str(exc)}), 403
+    except Exception:
+        app.logger.exception("Unexpected error while creating token via /admin/generate")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @app.route("/admin/dashboard", methods=["GET"])
@@ -974,53 +1047,3 @@ if __name__ == "__main__":
     host = os.environ.get("HOST", "0.0.0.0")
     debug = os.environ.get("APP_DEBUG", "false").lower() == "true"
     app.run(host=host, port=port, debug=debug)
-def create_token(slug, ref, expires_days_param=None, expires_at_param=None):
-    if not slug or not ref:
-        raise ValueError("slug and ref are required")
-    
-    ensure_referrer(ref)
-    ensure_post_access(ref, slug)
-    
-    if not is_referrer_allowed(ref):
-        raise PermissionError("Referrer not allowed")
-    if not is_post_allowed_for_ref(ref, slug):
-        raise PermissionError("Slug not allowed for this referrer")
-    
-    created = datetime.datetime.utcnow()
-    if expires_at_param:
-        try:
-            expires = datetime.datetime.fromisoformat(expires_at_param)
-            expires_iso = expires.isoformat()
-        except Exception:
-            raise ValueError("Invalid expires_at format. Use YYYY-MM-DD")
-    elif expires_days_param:
-        try:
-            days = int(expires_days_param)
-            if days == 0:
-                expires_iso = None
-            else:
-                expires = created + datetime.timedelta(days=days)
-                expires_iso = expires.isoformat()
-        except Exception:
-            raise ValueError("Invalid expires_days format. Must be a number")
-    elif TOKEN_EXPIRY_DAYS == 0:
-        expires_iso = None
-    else:
-        expires = created + datetime.timedelta(days=TOKEN_EXPIRY_DAYS)
-        expires_iso = expires.isoformat()
-    
-    token = str(uuid.uuid4())
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            "INSERT INTO tokens (token, slug, referrer, created_at, expires_at, valid) VALUES (?, ?, ?, ?, ?, 1)",
-            (token, slug, ref, created.isoformat(), expires_iso)
-        )
-        conn.commit()
-    
-    return {
-        "slug": slug,
-        "ref": ref,
-        "token": token,
-        "token_url": f"{APP_BASE_URL}/read/{token}",
-        "expires_at": expires_iso or "Never"
-    }

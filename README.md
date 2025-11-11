@@ -42,10 +42,16 @@ Designed to run seamlessly on **Coolify** or any Docker-based host.
    Edit `.env` and replace the placeholder values with your actual values:
    - Replace `https://your-ghost-blog.com` with your Ghost blog URL
    - Replace `your-id:your-secret` with your Ghost Admin API key
+   - **Set `ADMIN_API_KEY` to a strong, random value (used by `/generate` and admin APIs)**
+   - **Set `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD` for the dashboard login**
+   - (Optional) set `FLASK_SECRET` to a random string for session cookies (defaults to the admin key)
    - Replace `https://your-gateway-domain.com` with your gateway's public URL
    - Fill in optional values if needed
+   - Run `openssl rand -hex 32` and paste the output into `ADMIN_API_KEY` (and optionally `FLASK_SECRET`). Use a separate random string for `BASIC_AUTH_PASSWORD` so the dashboard login differs from the API key.
    
    **Note:** The `.env` file contains sensitive information and is automatically ignored by git (see `.gitignore`). The `env.template` file is a safe template that you can copy.
+
+   **Generate strong secrets:** run `openssl rand -hex 32` (or `python - <<'PY'` snippets) and paste the output into `ADMIN_API_KEY` (required) and `FLASK_SECRET`. Reuse a different value for `BASIC_AUTH_PASSWORD` if you want the dashboard login to differ from the API key.
 
 3. **Build and run with Docker:**
    ```bash
@@ -82,6 +88,9 @@ Coolify's Developer View allows you to copy and paste multiple environment varia
 4. Paste the content and replace the placeholder values with your actual values:
    - Replace `https://your-ghost-blog.com` with your Ghost blog URL
    - Replace `your-id:your-secret` with your Ghost Admin API key
+   - **Set `ADMIN_API_KEY` (required) with a strong random string; the dashboard generator and `/generate` use this key**
+   - **Set `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD` (required) for the dashboard login**
+   - (Optional) set `FLASK_SECRET` to a random string for session cookies (defaults to the admin key)
    - Replace `https://your-gateway-domain.com` with your gateway's public URL
    - Fill in optional values if needed
 5. Click **Save**
@@ -101,6 +110,7 @@ If you prefer to add variables one by one, go to **Configuration** → **Environ
 | `GHOST_URL` | Your Ghost blog URL | `https://your-ghost-blog.com` |
 | `GHOST_ADMIN_KEY` | Admin API key | Ghost Admin → Settings → Integrations → Create Custom Integration → Copy Admin API key (format: `id:secret`) |
 | `APP_BASE_URL` | Your gateway's public URL | `https://example.com` (the domain you set in Coolify) |
+| `ADMIN_API_KEY` | Random admin token that locks `/generate` and admin APIs | `openssl rand -hex 32` |
 
 **Optional Environment Variables:**
 
@@ -113,10 +123,10 @@ If you prefer to add variables one by one, go to **Configuration** → **Environ
 | `SITE_ICON_URL` | (empty) | Override favicon shown on rendered pages |
 | `SITE_LOGO_URL` | (empty) | Override logo used in metadata |
 | `TOKEN_EXPIRY_DAYS` | `0` | Token expiration in days. `0` keeps links forever (default) |
-| `ADMIN_API_KEY` | (empty) | API key for admin endpoints. If not set, admin endpoints are publicly accessible (not recommended) |
 | `ACCESS_LOG_RETENTION_DAYS` | `60` | How long to keep access logs. `0` disables logging. Negative keeps forever. |
 | `BASIC_AUTH_USERNAME` | `admin` | Username for dashboard Basic auth (blank disables Basic auth) |
 | `BASIC_AUTH_PASSWORD` | (empty) | Password for dashboard Basic auth (defaults to `ADMIN_API_KEY` if left empty) |
+| `FLASK_SECRET` | (empty) | Secret key for session cookies (defaults to `ADMIN_API_KEY` or fallback) |
 | `DEFAULT_RATE_LIMIT` | `240/hour` | Baseline rate limit for anonymous/read endpoints |
 | `ADMIN_RATE_LIMIT` | `60/minute` | Rate limit applied to admin APIs and dashboard actions |
 | `GENERATE_RATE_LIMIT` | `20/minute` | Rate limit for `/generate/<slug>` |
@@ -142,10 +152,11 @@ If you prefer to add variables one by one, go to **Configuration** → **Environ
 | `SITE_ICON_URL` | (Optional) Custom favicon URL for rendered pages | `https://yourblog.com/favicon.ico` |
 | `SITE_LOGO_URL` | (Optional) Custom logo URL fallback for metadata | `https://yourblog.com/content/images/logo.png` |
 | `TOKEN_EXPIRY_DAYS` | (Optional) Token expiration in days. Set to `0` for no expiration | `0` (default: never expires). Set to `30` to enforce 30-day lifetime |
-| `ADMIN_API_KEY` | (Optional) API key for admin endpoints | (empty). **Recommended:** Set a secure key to protect admin endpoints |
+| `ADMIN_API_KEY` | **Required.** API key for admin APIs and `/generate/<slug>` | Output of `openssl rand -hex 32` (64 hex chars) |
 | `ACCESS_LOG_RETENTION_DAYS` | (Optional) How long to keep access logs. `60` default, `0` disables logging, negative keeps forever | `60` |
 | `BASIC_AUTH_USERNAME` | (Optional) Username for dashboard Basic auth (blank disables Basic auth, however, NOT RECOMMENDED) | `admin` |
-| `BASIC_AUTH_PASSWORD` | (Optional) Password for dashboard Basic auth. Defaults to `ADMIN_API_KEY` when unset | (empty) |
+| `BASIC_AUTH_PASSWORD` | (Optional) Password for dashboard Basic auth. Defaults to `ADMIN_API_KEY` when unset | Separate random string |
+| `FLASK_SECRET` | (Optional) Secret used for session cookies | Another `openssl rand -hex 32` |
 | `DEFAULT_RATE_LIMIT` | Default rate limit applied globally (`240/hour` by default) | `240/hour` |
 | `ADMIN_RATE_LIMIT` | Rate limit for admin endpoints | `60/minute` |
 | `GENERATE_RATE_LIMIT` | Rate limit for `/generate/<slug>` | `20/minute` |
