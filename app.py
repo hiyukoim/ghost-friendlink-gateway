@@ -1039,7 +1039,7 @@ def admin_generate():
     if not refs:
         return jsonify({"error": "ref (or refs) is required"}), 400
     if len(refs) > MAX_BULK_REFS:
-        return jsonify({"error": f\"Too many referrers supplied. Max {MAX_BULK_REFS} per request.\"}), 400
+        return jsonify({"error": f"Too many referrers supplied. Max {MAX_BULK_REFS} per request."}), 400
     expires_days = data.get("expires_days")
     expires_at = data.get("expires_at")
     try:
