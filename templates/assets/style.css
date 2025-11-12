@@ -246,6 +246,7 @@ body.post-page {
 .author-avatar img {
     width: 64px;
     height: 64px;
+    max-width: 64px;
     border-radius: 50%;
     object-fit: cover;
     background: #e2e8f0;
@@ -305,6 +306,7 @@ body.post-page {
 .written-by-avatar img {
     width: 64px;
     height: 64px;
+    max-width: 64px;
     border-radius: 50%;
     object-fit: cover;
     background: #e2e8f0;

@@ -71,11 +71,13 @@
         </section>
         <section class="author-strip">
             <div class="author-core">
-                {% if primary_author and primary_author.profile_image %}
-                <img src="{{ primary_author.profile_image }}" alt="{{ primary_author.name }}">
-                {% else %}
-                <img src="{{ ghost_url ~ '/content/images/size/w200/ghost.png' if ghost_url else 'https://static.ghost.org/v4.0.0/images/ghost.png' }}" alt="Author avatar">
-                {% endif %}
+                <div class="author-avatar">
+                    {% if primary_author and primary_author.profile_image %}
+                    <img src="{{ primary_author.profile_image }}" alt="{{ primary_author.name }}">
+                    {% else %}
+                    <img src="{{ ghost_url ~ '/content/images/size/w200/ghost.png' if ghost_url else 'https://static.ghost.org/v4.0.0/images/ghost.png' }}" alt="Author avatar">
+                    {% endif %}
+                </div>
                 <div>
                     <strong class="author-name">{{ primary_author.name if primary_author else "Guest Author" }}</strong>
                     {% if primary_author and primary_author.location %}
@@ -113,11 +115,13 @@
             {% endif %}
         </article>
         <section class="written-by">
-            {% if primary_author and primary_author.profile_image %}
-            <img src="{{ primary_author.profile_image }}" alt="{{ primary_author.name }}">
-            {% else %}
-            <img src="{{ ghost_url ~ '/content/images/size/w200/ghost.png' if ghost_url else 'https://static.ghost.org/v4.0.0/images/ghost.png' }}" alt="Author avatar">
-            {% endif %}
+            <div class="written-by-avatar">
+                {% if primary_author and primary_author.profile_image %}
+                <img src="{{ primary_author.profile_image }}" alt="{{ primary_author.name }}">
+                {% else %}
+                <img src="{{ ghost_url ~ '/content/images/size/w200/ghost.png' if ghost_url else 'https://static.ghost.org/v4.0.0/images/ghost.png' }}" alt="Author avatar">
+                {% endif %}
+            </div>
             <div>
                 <p class="written-by-label">Written by</p>
                 <h3 class="written-by-name">{{ primary_author.name if primary_author else "Guest Author" }}</h3>
