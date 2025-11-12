@@ -169,11 +169,11 @@
         <p style="color:#64748b;font-size:0.9rem;">Paste the Ghost slug and the guest identifier (referrer). This works like a link shortener: first box = post, second box = guest. Optional expiry overrides sit underneath.</p>
         <form id="generator-form" style="display:grid;gap:0.75rem;max-width:720px;">
             <label>
-                <span>Post slug (Ghost URL segment)</span>
+                <span>Post slug (Ghost URL segment e.g. https://yourblog.com/`SLUG`/)</span>
                 <textarea id="gen-slug" rows="2" required placeholder="my-paid-post" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;"></textarea>
             </label>
             <label>
-                <span>Guest / Referrer (comma or newline separated for bulk)</span>
+                <span>Guest / Referrer (comma or newline separated for bulk. You can use space and emoji accepted.)</span>
                 <textarea id="gen-ref" rows="3" required placeholder="alice@example.com, bob@example.com" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;"></textarea>
             </label>
             <div style="display:flex;gap:1rem;flex-wrap:wrap;">

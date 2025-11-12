@@ -39,34 +39,68 @@
     {% else %}
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% endif %}
-    <style>
-        .ref-banner {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            background: rgba(15, 23, 42, 0.85);
-            color: #fff;
-            padding: 0.6rem 1rem;
-            border-radius: 999px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
-            z-index: 999;
-        }
-        .ref-banner small {
-            font-weight: 400;
-            opacity: 0.85;
-        }
-    </style>
 </head>
-<body>
+{% set primary_author = post.primary_author %}
+{% if not primary_author and post.authors and post.authors|length > 0 %}
+    {% set primary_author = post.authors[0] %}
+{% endif %}
+<body class="post-page">
     {% if ref %}
     <div class="ref-banner">
         <small>This link belongs to</small><br>
         {{ ref }}
     </div>
     {% endif %}
-    <div class="container">
+    <main class="page">
+        <header class="site-head">
+            <div class="site-head-title">{{ site.title or "FriendLink Gateway" }}</div>
+            {% if site.description %}
+            <p class="site-head-desc">{{ site.description }}</p>
+            {% endif %}
+        </header>
+        <hr class="divider">
+        <section class="post-hero">
+            {% if post.primary_tag %}
+            <p class="post-hero-tag">{{ post.primary_tag.name }}</p>
+            {% endif %}
+            {% if post.title %}<h1 class="post-hero-title">{{ post.title }}</h1>{% endif %}
+            {% if post.excerpt %}
+            <p class="post-hero-summary">{{ post.excerpt }}</p>
+            {% endif %}
+        </section>
+        <section class="author-strip">
+            <div class="author-core">
+                {% if primary_author and primary_author.profile_image %}
+                <img src="{{ primary_author.profile_image }}" alt="{{ primary_author.name }}">
+                {% else %}
+                <img src="{{ ghost_url ~ '/content/images/size/w200/ghost.png' if ghost_url else 'https://static.ghost.org/v4.0.0/images/ghost.png' }}" alt="Author avatar">
+                {% endif %}
+                <div>
+                    <strong class="author-name">{{ primary_author.name if primary_author else "Guest Author" }}</strong>
+                    {% if primary_author and primary_author.location %}
+                    <span class="author-location">{{ primary_author.location }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="meta-list">
+                {% if post.published_at %}
+                    {% set published = post.published_at[:10] %}
+                    <span>Published {{ published }}</span>
+                {% endif %}
+                {% if post.updated_at and post.updated_at != post.published_at %}
+                    {% set updated = post.updated_at[:10] %}
+                    <span>Updated {{ updated }}</span>
+                {% endif %}
+                {% if post.reading_time %}
+                    <span>{{ post.reading_time }} min read</span>
+                {% endif %}
+            </div>
+        </section>
+        {% if post.feature_image %}
+        <div class="feature-image">
+            <img src="{{ post.feature_image }}" alt="{{ post.title }}">
+        </div>
+        {% endif %}
         <article class="post-content">
             {% if post.html %}
             {{ post.html | safe }}
@@ -74,17 +108,37 @@
             <p>Content not available.</p>
             {% endif %}
         </article>
-        
-        {% if site.title or ghost_url %}
-        <div class="footer">
-            {% if site.title %}
-            <p>{{ site.title }}</p>
+        <section class="written-by">
+            {% if primary_author and primary_author.profile_image %}
+            <img src="{{ primary_author.profile_image }}" alt="{{ primary_author.name }}">
+            {% else %}
+            <img src="{{ ghost_url ~ '/content/images/size/w200/ghost.png' if ghost_url else 'https://static.ghost.org/v4.0.0/images/ghost.png' }}" alt="Author avatar">
             {% endif %}
+            <div>
+                <p class="written-by-label">Written by</p>
+                <h3 class="written-by-name">{{ primary_author.name if primary_author else "Guest Author" }}</h3>
+                {% if primary_author and primary_author.bio %}
+                <p class="written-by-bio">{{ primary_author.bio }}</p>
+                {% endif %}
+                <div class="author-socials">
+                    {% if primary_author and primary_author.website %}
+                    <a href="{{ primary_author.website }}" target="_blank" rel="noopener">Website</a>
+                    {% endif %}
+                    {% if primary_author and primary_author.twitter %}
+                    <a href="https://twitter.com/{{ primary_author.twitter|replace('@','') }}" target="_blank" rel="noopener">Twitter</a>
+                    {% endif %}
+                    {% if primary_author and primary_author.facebook %}
+                    <a href="https://facebook.com/{{ primary_author.facebook }}" target="_blank" rel="noopener">Facebook</a>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+        <footer class="footer">
+            <div>&copy; {{ now().year }} {{ site.title }}</div>
             {% if ghost_url %}
-            <p><a href="{{ ghost_url }}">Visit original site</a></p>
+            <div><a href="{{ ghost_url }}" target="_blank" rel="noopener">Back to Ghost</a></div>
             {% endif %}
-        </div>
-        {% endif %}
-    </div>
+        </footer>
+    </main>
 </body>
 </html>
