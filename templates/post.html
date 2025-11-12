@@ -64,9 +64,10 @@
             <p class="post-hero-tag">{{ post.primary_tag.name }}</p>
             {% endif %}
             {% if post.title %}<h1 class="post-hero-title">{{ post.title }}</h1>{% endif %}
-            {% set summary = post.custom_excerpt or post.excerpt %}
-            {% if summary %}
-            <p class="post-hero-summary">{{ summary }}</p>
+            {% if post.custom_excerpt %}
+            <p class="post-hero-summary">{{ post.custom_excerpt }}</p>
+            {% elif post.excerpt %}
+            <p class="post-hero-summary">{{ post.excerpt | truncate(160) }}</p>
             {% endif %}
         </section>
         <section class="author-strip">
@@ -138,14 +139,32 @@
                     {% if primary_author and primary_author.facebook %}
                     <a href="https://facebook.com/{{ primary_author.facebook }}" target="_blank" rel="noopener">Facebook</a>
                     {% endif %}
+                    {% if primary_author and primary_author.threads %}
+                    <a href="https://www.threads.net/@{{ primary_author.threads|replace('@','') }}" target="_blank" rel="noopener">Threads</a>
+                    {% endif %}
+                    {% if primary_author and primary_author.bluesky %}
+                    <a href="https://bsky.app/profile/{{ primary_author.bluesky }}" target="_blank" rel="noopener">Bluesky</a>
+                    {% endif %}
+                    {% if primary_author and primary_author.mastodon %}
+                    <a href="{{ primary_author.mastodon }}" target="_blank" rel="noopener">Mastodon</a>
+                    {% endif %}
+                    {% if primary_author and primary_author.tiktok %}
+                    <a href="https://www.tiktok.com/@{{ primary_author.tiktok|replace('@','') }}" target="_blank" rel="noopener">TikTok</a>
+                    {% endif %}
+                    {% if primary_author and primary_author.youtube %}
+                    <a href="{{ primary_author.youtube }}" target="_blank" rel="noopener">YouTube</a>
+                    {% endif %}
+                    {% if primary_author and primary_author.instagram %}
+                    <a href="https://instagram.com/{{ primary_author.instagram|replace('@','') }}" target="_blank" rel="noopener">Instagram</a>
+                    {% endif %}
+                    {% if primary_author and primary_author.linkedin %}
+                    <a href="https://linkedin.com/in/{{ primary_author.linkedin }}" target="_blank" rel="noopener">LinkedIn</a>
+                    {% endif %}
                 </div>
             </div>
         </section>
         <footer class="footer">
-            <div>&copy; {{ site.title }}</div>
-            {% if ghost_url %}
-            <div><a href="{{ ghost_url }}" target="_blank" rel="noopener">Back to Ghost</a></div>
-            {% endif %}
+            <div>&copy; <a href="{{ ghost_url }}" target="_blank" rel="noopener">{{ site.title }}</a></div>
         </footer>
     </main>
 </body>

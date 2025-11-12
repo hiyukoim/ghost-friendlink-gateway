@@ -1,5 +1,5 @@
 from flask import Flask, request, redirect, jsonify, Response, render_template, url_for, session
-import sqlite3, uuid, datetime, requests, os, jwt, csv, io, secrets, hmac
+import sqlite3, uuid, datetime, requests, os, jwt, csv, io, secrets, hmac, math
 from urllib.parse import urlparse
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -20,6 +20,7 @@ limiter = Limiter(get_remote_address, app=app, default_limits=[])
 DB_PATH = "data/tokens.db"
 GHOST_URL = os.getenv("GHOST_URL", "https://example.com")
 GHOST_ADMIN_KEY = os.getenv("GHOST_ADMIN_KEY", "").strip()
+GHOST_CONTENT_API_KEY = os.getenv("GHOST_CONTENT_API_KEY", "").strip()
 APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:5000")
 DEFAULT_REDIRECT = os.getenv("DEFAULT_REDIRECT", f"{GHOST_URL}/#/portal/signup")
 CUSTOM_CSS_URL = os.getenv("CUSTOM_CSS_URL", "").strip()
@@ -154,7 +155,39 @@ def make_ghost_admin_jwt():
 
 
 def ghost_api_url(slug):
-    return f"{GHOST_URL}/ghost/api/admin/posts/slug/{slug}/?formats=html&include=authors,tags"
+    fields = ",".join([
+        # Core fields shown in the template
+        "title",
+        "slug",
+        "html",
+        "excerpt",
+        "custom_excerpt",
+        "feature_image",
+        "feature_image_alt",
+        "feature_image_caption",
+        "reading_time",
+        "published_at",
+        "updated_at",
+        # Helpful metadata for advanced templates
+        "feature_image_alt",
+        "status",
+        "email_only",
+        "canonical_url",
+        "url",
+        # Post-level SEO/meta
+        "meta_title",
+        "meta_description",
+        "og_title",
+        "og_description",
+        "og_image",
+        "twitter_title",
+        "twitter_description",
+        "twitter_image",
+    ])
+    return (
+        f"{GHOST_URL}/ghost/api/admin/posts/slug/{slug}/"
+        f"?formats=html&include=authors,tags&fields={fields}"
+    )
 
 
 def get_ghost_site_settings():
@@ -164,11 +197,17 @@ def get_ghost_site_settings():
         'description': SITE_DESCRIPTION,
         'icon': SITE_ICON_URL,
         'logo': SITE_LOGO_URL,
+        'twitter': None,
+        'facebook': None,
+        'url': None,
+        'lang': None,
     }
     
     # Try to fetch from Ghost Content API (fill missing values only)
     try:
         settings_url = f"{GHOST_URL}/ghost/api/content/settings/"
+        if GHOST_CONTENT_API_KEY:
+            settings_url += ("?key=" + GHOST_CONTENT_API_KEY)
         r = requests.get(settings_url, timeout=3)
         if r.status_code == 200:
             settings = r.json().get('settings', {})
@@ -176,6 +215,10 @@ def get_ghost_site_settings():
             site_info['description'] = site_info['description'] or settings.get('description', '')
             site_info['icon'] = site_info['icon'] or settings.get('icon', '')
             site_info['logo'] = site_info['logo'] or settings.get('logo', '')
+            site_info['twitter'] = site_info['twitter'] or settings.get('twitter')
+            site_info['facebook'] = site_info['facebook'] or settings.get('facebook')
+            site_info['url'] = site_info['url'] or settings.get('url')
+            site_info['lang'] = site_info['lang'] or settings.get('lang')
     except:
         # Silently fail - we'll use defaults
         pass
@@ -203,6 +246,14 @@ def has_valid_admin_bearer():
         provided_key = auth_header[7:]
         return provided_key == ADMIN_API_KEY
     return False
+
+
+def parse_positive_int(value, default):
+    try:
+        parsed = int(value)
+        return parsed if parsed > 0 else default
+    except (TypeError, ValueError):
+        return default
 
 
 def get_or_create_csrf_token():
@@ -1069,12 +1120,30 @@ def admin_dashboard():
     if redirect_response:
         return redirect_response
     
+    pairs_per_page = 25
+    tokens_per_page = 25
+    requested_pairs_page = parse_positive_int(request.args.get("pairs_page", 1), 1)
+    requested_tokens_page = parse_positive_int(request.args.get("tokens_page", 1), 1)
+    
     with sqlite3.connect(DB_PATH) as conn:
+        pair_total = conn.execute(
+            "SELECT COUNT(*) FROM referrer_posts WHERE active = 1"
+        ).fetchone()[0]
+        pair_pages = max(1, math.ceil(pair_total / pairs_per_page)) if pair_total else 1
+        pairs_page = min(requested_pairs_page, pair_pages)
+        pairs_offset = (pairs_page - 1) * pairs_per_page
         pair_rows = conn.execute(
-            "SELECT slug, referrer, created_at FROM referrer_posts WHERE active = 1 ORDER BY created_at DESC"
+            "SELECT slug, referrer, created_at FROM referrer_posts WHERE active = 1 ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (pairs_per_page, pairs_offset)
         ).fetchall()
+
+        token_total = conn.execute("SELECT COUNT(*) FROM tokens").fetchone()[0]
+        token_pages = max(1, math.ceil(token_total / tokens_per_page)) if token_total else 1
+        tokens_page = min(requested_tokens_page, token_pages)
+        tokens_offset = (tokens_page - 1) * tokens_per_page
         token_rows = conn.execute(
-            "SELECT token, slug, referrer, created_at, expires_at, valid FROM tokens ORDER BY created_at DESC"
+            "SELECT token, slug, referrer, created_at, expires_at, valid FROM tokens ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (tokens_per_page, tokens_offset)
         ).fetchall()
     
     latest_token_map = {}
@@ -1109,6 +1178,14 @@ def admin_dashboard():
         csrf_token=get_or_create_csrf_token(),
         admin_username=session.get("admin_username", ADMIN_LOGIN_USERNAME),
         max_bulk_refs=MAX_BULK_REFS,
+        pairs_page=pairs_page,
+        pair_pages=pair_pages,
+        pair_total=pair_total,
+        pairs_per_page=pairs_per_page,
+        tokens_page=tokens_page,
+        token_pages=token_pages,
+        token_total=token_total,
+        tokens_per_page=tokens_per_page,
     )
 
 

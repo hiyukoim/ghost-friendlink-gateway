@@ -4,7 +4,7 @@ A lightweight Flask-based gateway for sharing private or paid Ghost posts via un
 
 Each token is unique, can be generated per platform ( Ko-fi, Patreon, Gumroad, your mum, etc.), and can be revoked anytime.
 Designed to run seamlessly on **Coolify** or any Docker-based host.
-※ This repo is vibe coded with Chat GPT-5, Codex and Cursor.
+※ This repo is vibe coded with Chat GPT-5 Codex, Gemini and Claude on Cursor (vibe coded!)
 
 ## Features
 
@@ -44,6 +44,7 @@ Designed to run seamlessly on **Coolify** or any Docker-based host.
    Edit `.env` and replace the placeholder values with your actual values:
    - Replace `https://your-ghost-blog.com` with your Ghost blog URL
    - Replace `your-id:your-secret` with your Ghost Admin API key
+   - (Optional) set `GHOST_CONTENT_API_KEY` if your Content API requires a key for `/ghost/api/content/settings`
    - **Set `ADMIN_API_KEY` to a strong, random value (used by `/generate` and admin APIs)**
    - **Set `ADMIN_LOGIN_USERNAME` / `ADMIN_LOGIN_PASSWORD` for the dashboard login**
    - (Optional) set `FLASK_SECRET` to a random string for session cookies (defaults to the admin key)
@@ -112,6 +113,7 @@ If you prefer to add variables one by one, go to **Configuration** → **Environ
 |----------|-------|-----------------|
 | `GHOST_URL` | Your Ghost blog URL | `https://your-ghost-blog.com` |
 | `GHOST_ADMIN_KEY` | Admin API key | Ghost Admin → Settings → Integrations → Create Custom Integration → Copy Admin API key (format: `id:secret`) |
+| `GHOST_CONTENT_API_KEY` | (Optional) Content API key used to fetch site metadata | `ghost_public_key_from_content_api` |
 | `APP_BASE_URL` | Your gateway's public URL | `https://example.com` (the domain you set in Coolify) |
 | `ADMIN_API_KEY` | Random admin token that locks `/generate` and admin APIs | `openssl rand -hex 32` |
 
@@ -126,6 +128,7 @@ If you prefer to add variables one by one, go to **Configuration** → **Environ
 | `SITE_ICON_URL` | (empty) | Override favicon shown on rendered pages |
 | `SITE_LOGO_URL` | (empty) | Override logo used in metadata |
 | `TOKEN_EXPIRY_DAYS` | `0` | Token expiration in days. `0` keeps links forever (default) |
+| `GHOST_CONTENT_API_KEY` | (empty) | Content API key for fetching Ghost settings (title, description, icons) |
 | `ACCESS_LOG_RETENTION_DAYS` | `60` | How long to keep access logs. `0` disables logging. Negative keeps forever. |
 | `ADMIN_LOGIN_USERNAME` | `admin` | Username for the `/admin/login` form |
 | `ADMIN_LOGIN_PASSWORD` | (empty) | Password for `/admin/login` (defaults to `ADMIN_API_KEY` if left empty) |
@@ -168,6 +171,7 @@ Once the storage is attached, redeploy the app—existing tokens will survive fu
 |-----------|--------------|----------|
 | `GHOST_URL` | Your Ghost blog base URL | `https://yourblog.com` |
 | `GHOST_ADMIN_KEY` | Admin API key from Ghost Integrations | `abc123:verylongsecret` |
+| `GHOST_CONTENT_API_KEY` | (Optional) Content API key used to fetch Ghost settings | `ghost_public_key_from_content_api` |
 | `APP_BASE_URL` | Public base URL of this app | `https://gateway.yourdomain.com` |
 | `DEFAULT_REDIRECT` | (Optional) Fallback URL for invalid tokens | `https://yourblog.com/#/portal/signup` |
 | `CUSTOM_CSS_URL` | (Optional) Custom CSS URL to override default CSS | `https://yourblog.com/assets/custom.css` |
