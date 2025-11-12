@@ -53,7 +53,7 @@
     {% endif %}
     <main class="page">
         <header class="site-head">
-            <div class="site-head-title">{{ site.title or "FriendLink Gateway" }}</div>
+            <div class="site-head-title">{{ site.title }}</div>
             {% if site.description %}
             <p class="site-head-desc">{{ site.description }}</p>
             {% endif %}
@@ -64,8 +64,9 @@
             <p class="post-hero-tag">{{ post.primary_tag.name }}</p>
             {% endif %}
             {% if post.title %}<h1 class="post-hero-title">{{ post.title }}</h1>{% endif %}
-            {% if post.excerpt %}
-            <p class="post-hero-summary">{{ post.excerpt }}</p>
+            {% set summary = post.custom_excerpt or post.excerpt %}
+            {% if summary %}
+            <p class="post-hero-summary">{{ summary }}</p>
             {% endif %}
         </section>
         <section class="author-strip">
@@ -91,15 +92,18 @@
                     {% set updated = post.updated_at[:10] %}
                     <span>Updated {{ updated }}</span>
                 {% endif %}
-                {% if post.reading_time %}
+                {% if post.reading_time is not none %}
                     <span>{{ post.reading_time }} min read</span>
                 {% endif %}
             </div>
         </section>
         {% if post.feature_image %}
-        <div class="feature-image">
-            <img src="{{ post.feature_image }}" alt="{{ post.title }}">
-        </div>
+        <figure class="feature-image">
+            <img src="{{ post.feature_image }}" alt="{{ post.feature_image_alt or post.title }}">
+            {% if post.feature_image_caption %}
+            <figcaption>{{ post.feature_image_caption }}</figcaption>
+            {% endif %}
+        </figure>
         {% endif %}
         <article class="post-content">
             {% if post.html %}
@@ -134,7 +138,7 @@
             </div>
         </section>
         <footer class="footer">
-            <div>&copy; {{ site.title or 'Ghost FriendLink Gateway' }}</div>
+            <div>&copy; {{ site.title }}</div>
             {% if ghost_url %}
             <div><a href="{{ ghost_url }}" target="_blank" rel="noopener">Back to Ghost</a></div>
             {% endif %}

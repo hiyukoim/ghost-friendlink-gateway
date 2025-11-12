@@ -154,7 +154,7 @@ def make_ghost_admin_jwt():
 
 
 def ghost_api_url(slug):
-    return f"{GHOST_URL}/ghost/api/admin/posts/slug/{slug}/?formats=html"
+    return f"{GHOST_URL}/ghost/api/admin/posts/slug/{slug}/?formats=html&include=authors,tags"
 
 
 def get_ghost_site_settings():
