@@ -143,6 +143,25 @@ If you prefer to add variables one by one, go to **Configuration** → **Environ
 4. (Optional) Map a persistent volume to `/app/data` for token storage  
 5. Deploy 🚀
 
+#### Persistent Storage
+
+The app stores every token and access log inside a simple SQLite database at `/app/data/tokens.db`.  
+When you redeploy without a volume, that directory gets wiped and all previously generated links disappear.  
+To keep history intact on Coolify (even with GitHub/Private Repo deployments), add a **Persistent Storage** entry:
+
+| Field             | Example value     | Notes                                      |
+|-------------------|------------------|--------------------------------------------|
+| Name              | `app-data`       | Any descriptive label                      |
+| Source Path       | *(leave blank)*   | Let Coolify manage the host path automatically |
+| Destination Path  | `/app/data`      | Must match the container path shown above  |
+
+This configuration mirrors the local `./data:/app/data` volume from `docker-compose.yml`.  
+If you want a custom host location, create a directory on the server (e.g. `/var/lib/coolify/ghost-friendlink-gateway/data`) and enter that as **Source Path** instead of leaving it empty.
+
+- Official docs: [Add Persistent Storage · Coolify](https://coolify.io/docs/knowledge-base/persistent-storage)
+
+Once the storage is attached, redeploy the app—existing tokens will survive future deployments, and revoke/history views in the dashboard will keep working.
+
 ## Environment Variables
 
 | Variable | Description | Example |

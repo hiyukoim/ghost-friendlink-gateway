@@ -40,11 +40,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% endif %}
 </head>
-{% set primary_author = post.primary_author %}
-{% if not primary_author and post.authors and post.authors|length > 0 %}
-    {% set primary_author = post.authors[0] %}
-{% endif %}
 <body class="post-page">
+    {% set primary_author = post.primary_author %}
+    {% if not primary_author and post.authors and post.authors|length > 0 %}
+        {% set primary_author = post.authors[0] %}
+    {% endif %}
     {% if ref %}
     <div class="ref-banner">
         <small>This link belongs to</small><br>
@@ -134,7 +134,7 @@
             </div>
         </section>
         <footer class="footer">
-            <div>&copy; {{ now().year }} {{ site.title }}</div>
+            <div>&copy; {{ site.title or 'Ghost FriendLink Gateway' }}</div>
             {% if ghost_url %}
             <div><a href="{{ ghost_url }}" target="_blank" rel="noopener">Back to Ghost</a></div>
             {% endif %}
