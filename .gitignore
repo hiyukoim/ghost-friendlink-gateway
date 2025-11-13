@@ -15,6 +15,7 @@ styles/.DS_Store
 .bash_history
 .cache/
 .cursor
+.venv/
 .node-gyp/
 .env
 Thumbs.db

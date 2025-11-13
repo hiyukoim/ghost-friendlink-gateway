@@ -2,6 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 COPY app.py .
+COPY ghost_gateway/ ghost_gateway/
 COPY app_ui/ app_ui/
 COPY templates/ templates/
 RUN mkdir -p static && cp -R templates/assets/. static/

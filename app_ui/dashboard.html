@@ -1,343 +1,365 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-core="elegant">
 <head>
     <meta charset="UTF-8">
-    <title>FriendLink Dashboard</title>
+    <title>Ghost Friend Link Gateway Dashboard | {{ site.title }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.2/css/halfmoon.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.2/css/cores/halfmoon.elegant.css">
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #f4f5f7;
-            margin: 0;
-            padding: 2rem;
-            color: #1f2933;
-        }
-        h1, h2 {
-            margin: 0 0 1rem 0;
-        }
-        .heading {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-        .card {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-        th, td {
-            padding: 0.6rem;
-            border-bottom: 1px solid #e5e7eb;
-            word-wrap: break-word;
-            word-break: break-word;
-        }
-        th {
-            text-align: left;
-        }
-        th {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #64748b;
-        }
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.2rem 0.7rem;
-            border-radius: 999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .badge.active {
-            background: #dcfce7;
-            color: #166534;
-        }
-        .badge.inactive {
-            background: #fee2e2;
-            color: #991b1b;
-        }
         .token {
-            font-family: "SFMono-Regular", Consolas, Monaco, "Liberation Mono", monospace;
-            font-size: 0.85rem;
-            color: #475569;
             word-break: break-all;
         }
-        .empty {
-            color: #94a3b8;
-            font-style: italic;
+        .min-table-width {
+            min-width: 640px;
         }
-        .revoke-btn {
-            padding: 0.35rem 0.8rem;
-            border-radius: 8px;
-            border: none;
-            background: #fee2e2;
-            color: #991b1b;
-            font-weight: 600;
-            cursor: pointer;
+        .theme-toggle {
+            display: inline-flex;
         }
-        .revoke-btn:hover {
-            background: #fecaca;
+        .card:not(:last-of-type) {
+            margin-bottom: 2rem;
         }
-        .pair-revoke {
-            padding: 0.4rem 0.9rem;
-            border-radius: 10px;
-            border: none;
-            background: #fee2e2;
-            color: #991b1b;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            max-width: 160px;
+        .card {
+            padding: 0.9rem 1rem;
         }
-        .pair-revoke:hover {
-            background: #fecaca;
+        .card > h2 {
+            margin-bottom: 0.75rem;
         }
-        .ref-action {
-            padding: 0.35rem 0.8rem;
-            border-radius: 8px;
-            border: none;
-            background: #fef3c7;
-            color: #92400e;
-            font-weight: 600;
-            cursor: pointer;
+        .card > p.text-muted {
+            margin-bottom: 1rem;
         }
-        .ref-action:hover {
-            background: #fde68a;
+        .form-group + .form-group {
+            margin-top: 1rem;
         }
-        .guest-badges {
+        .row.gapped {
+            row-gap: 1rem;
+        }
+        .table-responsive {
+            margin-top: 1rem;
+        }
+        .table-actions {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.4rem;
-            margin-bottom: 0.5rem;
-        }
-        .guest-pill {
-            background: #e0f2fe;
-            color: #0f172a;
-            border-radius: 999px;
-            padding: 0.25rem 0.6rem;
-            display: inline-flex;
             align-items: center;
-            gap: 0.3rem;
-            font-size: 0.8rem;
+            justify-content: space-between;
+            gap: 0.75rem;
         }
-        .guest-pill button {
-            border: none;
-            background: transparent;
-            color: #0f172a;
-            cursor: pointer;
-            font-size: 0.8rem;
-            padding: 0;
-        }
-        .table-wrap {
-            width: 100%;
-        }
-        .post-add,
-        .guest-remove {
-            padding: 0.3rem 0.8rem;
-            border-radius: 8px;
-            border: 1px dashed #38bdf8;
-            background: transparent;
-            color: #0ea5e9;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .pager {
-            margin-top: 1rem;
+        .table-actions .pager {
             display: flex;
-            gap: 1rem;
+            flex-wrap: nowrap;
             align-items: center;
-            font-size: 0.9rem;
-            color: #475569;
+            gap: 0.4rem;
         }
-        .pager a {
-            font-weight: 600;
-            color: #2563eb;
-            text-decoration: none;
+        .table-actions .pager a,
+        .table-actions .pager span {
+            flex: 0 0 auto;
+            white-space: nowrap;
         }
-        .pager a:hover {
+        .meta-list span {
+            margin-right: 1rem;
+        }
+        .card-footer-actions {
+            margin-top: 1.75rem;
+        }
+        .section-spacer {
+            margin-top: 2rem;
+        }
+        .content-wrapper {
+            padding-top: 2.5rem;
+            padding-bottom: 2.5rem;
+        }
+        .app-footer {
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            text-align: center;
+            opacity: 0.8;
+        }
+        .app-footer a {
+            color: inherit;
             text-decoration: underline;
         }
-        .post-add:hover,
-        .guest-remove:hover {
-            background: rgba(14, 165, 233, 0.1);
+        .dashboard-header {
+            margin-bottom: 2.5rem;
+            gap: 1rem;
+            width: 100%;
         }
-        code {
-            background: #e2e8f0;
-            padding: 0.15rem 0.4rem;
-            border-radius: 6px;
+        .dashboard-title {
+            flex: 1 1 auto;
+            min-width: 0;
         }
-        @media (max-width: 600px) {
-            body {
-                padding: 1rem;
+        .dashboard-title .dash-heading {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .dashboard-actions {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 0.85rem;
+            align-items: center;
+            justify-content: flex-end;
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+        .dashboard-actions .btn,
+        .dashboard-actions form button {
+            white-space: nowrap;
+            flex: 0 0 auto;
+            min-height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding-inline: 0.8rem;
+            margin: 0;
+        }
+        .dashboard-actions .btn svg {
+            width: 15px;
+            height: 15px;
+        }
+        .mobile-label {
+            display: none;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            color: rgba(255, 255, 255, 0.65);
+        }
+        @media (min-width: 768px) {
+            .dashboard-header {
+                flex-wrap: nowrap;
+                align-items: center;
             }
-            table thead {
+            .dashboard-actions {
+                margin-left: auto;
+            }
+        }
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .dashboard-actions {
+                width: 100%;
+                justify-content: flex-start;
+                gap: 0.5rem;
+            }
+            .dashboard-actions .btn,
+            .dashboard-actions form button {
+                padding-inline: 0.65rem;
+            }
+            .table-responsive {
+                overflow: visible;
+            }
+            .min-table-width {
+                min-width: 100%;
+            }
+            .table-hover thead {
                 display: none;
             }
-            table,
-            tbody,
-            tr,
-            td {
-                display: block;
+            .table-hover tbody tr {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                padding: 1rem;
+            }
+            .table-hover tbody td {
+                width: 48%;
+                border: none;
+                padding: 0;
+            }
+            .table-hover tbody td:nth-child(1) {
                 width: 100%;
             }
-            tbody {
-                border-radius: 12px;
+            .table-hover tbody td:last-child {
+                width: auto;
+                margin-left: auto;
             }
-            tr {
-                margin-bottom: 1rem;
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 12px;
-                padding: 0.6rem 0.75rem;
-            }
-            td {
-                border: none;
-                padding: 0.4rem 0;
-            }
-            td::before {
-                content: attr(data-label);
+            .mobile-label {
                 display: block;
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                color: #94a3b8;
                 margin-bottom: 0.15rem;
             }
-            .pair-revoke {
-                max-width: none;
-            }
+        }
+        .table-hover th,
+        .table-hover td {
+            padding: 0.5rem 0.6rem;
+        }
+        .table-hover td:nth-child(5) .badge {
+            margin-left: 0.25rem;
+        }
+        .table-hover td:last-child button {
+            margin-left: 0.25rem;
+        }
+        .first-panel {
+            margin-top: 2.25rem;
         }
     </style>
+    <script>
+        function updateTheme() {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.setAttribute('data-bs-theme', prefersDark ? 'dark' : 'light');
+        }
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-bs-theme');
+            html.setAttribute('data-bs-theme', current === 'dark' ? 'light' : 'dark');
+        }
+        updateTheme();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateTheme);
+    </script>
 </head>
-<body data-csrf="{{ csrf_token }}" data-admin="{{ admin_username }}">
-    <div class="heading">
-        <div>
-            <h1>{{ site.title or "FriendLink Dashboard" }}</h1>
-            <p style="margin:0;color:#94a3b8;font-size:0.9rem;">Signed in as {{ admin_username }}</p>
-        </div>
-        <div style="display:flex;gap:0.75rem;align-items:center;">
-            {% if ghost_url %}
-            <a href="{{ ghost_url }}" target="_blank" rel="noopener">Visit Ghost</a>
-            {% endif %}
-            <form method="post" action="{{ url_for('admin_logout') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <button type="submit" style="padding:0.45rem 0.9rem;border-radius:10px;border:1px solid #cbd5f5;background:transparent;color:#0f172a;font-weight:600;cursor:pointer;">Log out</button>
-            </form>
-        </div>
-    </div>
-
-    <section class="card">
-        <h2>Generate Share Link</h2>
-        <p style="color:#64748b;font-size:0.9rem;">Paste the Ghost slug and the guest identifier (referrer). This works like a link shortener: first box = post, second box = guest. Optional expiry overrides sit underneath.</p>
-        <form id="generator-form" style="display:grid;gap:0.75rem;max-width:720px;">
-            <label>
-                <span>Post slug (Ghost URL segment e.g. <code>https://yourblog.com/<b>SLUG</b>/</code>)</span>
-                <textarea id="gen-slug" rows="2" required placeholder="my-paid-post" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;"></textarea>
-            </label>
-            <label>
-                <span>Guest / Referrer (comma or newline separated for bulk. You can use space and emoji accepted.)</span>
-                <textarea id="gen-ref" rows="3" required placeholder="alice@example.com, bob@example.com" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;"></textarea>
-            </label>
-            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-                <label style="flex:1 1 200px;">
-                    <span>Expires (in X days, optional)</span>
-                    <input type="number" id="gen-days" min="0" placeholder="Leave empty for no expiry" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;">
-                </label>
-                <label style="flex:1 1 200px;">
-                    <span>Expires at (YYYY-MM-DD, optional)</span>
-                    <input type="text" id="gen-date" placeholder="e.g. 2025-12-31" style="width:100%;padding:0.6rem;border-radius:8px;border:1px solid #cbd5f5;">
-                </label>
+<body class="with-custom-webkit-scrollbars with-custom-css-scrollbars" data-csrf="{{ csrf_token }}" data-admin="{{ admin_username }}">
+    <div class="page-wrapper">
+        <div class="content-wrapper container-lg py-30">
+            <div class="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-15">
+                <div class="dashboard-title">
+                    <h1 class="h2 mb-2 dash-heading">Dashboard | {{ site.title }}</h1>
+                    <p class="text-muted mb-1">Ghost Friend Link Gateway - Signed in as {{ admin_username }}</p>
+                </div>
+                <div class="dashboard-actions justify-content-md-end">
+                    {% if ghost_url %}
+                    <a href="{{ ghost_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Go to Ghost</a>
+                    {% endif %}
+                    <button class="btn btn-secondary btn-sm theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="currentColor" width="18" height="18">
+                            <path d="M303.3 112.7C196.2 121.2 112 210.8 112 320C112 434.9 205.1 528 320 528C353.3 528 384.7 520.2 412.6 506.3C309.2 482.9 232 390.5 232 280C232 214.2 259.4 154.9 303.3 112.7zM64 320C64 178.6 178.6 64 320 64C339.4 64 358.4 66.2 376.7 70.3C386.6 72.5 394 80.8 395.2 90.8C396.4 100.8 391.2 110.6 382.1 115.2C321.5 145.4 280 207.9 280 280C280 381.6 362.4 464 464 464C469 464 473.9 463.8 478.8 463.4C488.9 462.6 498.4 468.2 502.6 477.5C506.8 486.8 504.6 497.6 497.3 504.6C451.3 548.8 388.8 576 320 576C178.6 576 64 461.4 64 320z"/>
+                        </svg>
+                    </button>
+                    <form method="post" action="{{ url_for('admin.admin_logout') }}" class="m-0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="btn btn-light btn-sm">Log out</button>
+                    </form>
+                </div>
             </div>
-            <button type="submit" style="padding:0.8rem 1.2rem;border:none;border-radius:10px;background:#2563eb;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;">Generate link</button>
-        </form>
-        <div style="margin-top:0.8rem;color:#94a3b8;font-size:0.85rem;">
-            <strong>Required:</strong> Post slug + Guest (referrer). Separate multiple guests with commas or newlines (up to {{ max_bulk_refs }} at once).<br>
-            <strong>Optional:</strong> Expires (days) or Expires at. Leave empty for “never expires”.
-        </div>
-        <div id="generator-result" style="margin-top:1rem;"></div>
-    </section>
 
-    <section class="card">
-        <h2>Posts · Guests · Tokens</h2>
-        <p style="color:#64748b;font-size:0.9rem;">Each row is a Ghost slug + guest pair. The table shows the latest link (if any) and lets you revoke access instantly.</p>
-        {% if pairs %}
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width:52%;">Latest token</th>
-                        <th style="width:12%;">Post (slug)</th>
-                        <th style="width:12%;">Guest / Referrer</th>
-                        <th style="width:12%;">Created</th>
-                        <th style="width:12%; white-space: nowrap;">Revoke</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for pair in pairs %}
-                    <tr>
-                        <td data-label="Latest token">
-                            {% if pair.token %}
-                            <div class="token">
-                                {{ app_base_url }}/read/{{ pair.token.token }}
-                            </div>
-                            {% else %}
-                            <span class="empty">None yet</span>
-                            {% endif %}
-                        </td>
-                        <td data-label="Post (slug)"><code>{{ pair.slug }}</code></td>
-                        <td data-label="Guest / Referrer">{{ pair.referrer }}</td>
-                        <td data-label="Created">
-                            {% if pair.token %}
-                            {{ pair.token.created_at or '—' }}
-                            {% else %}
-                            {{ pair.granted_at or '—' }}
-                            {% endif %}
-                        </td>
-                        <td data-label="Revoke">
-                            <button class="pair-revoke" data-slug="{{ pair.slug }}" data-ref="{{ pair.referrer }}">Revoke</button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <section class="card shadow-lg mb-30 first-panel">
+                <h2 class="h5 mb-10">Generate Share Link</h2>
+                <p class="text-muted mb-20">
+                    Paste the Ghost slug and guest identifier (referrer). Optional expiry overrides are available below.
+                </p>
+                <form id="generator-form" class="w-full">
+                    <div class="form-group">
+                        <label for="gen-slug">Post slug</label>
+                        <textarea id="gen-slug" rows="2" class="form-control" required placeholder="my-paid-post"></textarea>
+                        <small class="text-muted">Your Ghost URL segment (e.g. <code>https://yourblog.com/<b>SLUG</b>/</code>).</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="gen-ref">Referrer</label>
+                        <textarea id="gen-ref" rows="3" class="form-control" required placeholder="alice@example.com, bob@example.com"></textarea>
+                        <small class="text-muted">Comma or newline separated for bulk (up to {{ max_bulk_refs }} entries).</small>
+                    </div>
+                    <div class="row gapped form-group">
+                        <div class="col-md">
+                            <label for="gen-days">Expires (days)</label>
+                            <input type="number" id="gen-days" min="0" class="form-control" placeholder="Leave empty for no expiry">
+                        </div>
+                        <div class="col-md">
+                            <label for="gen-date">Expires at (YYYY-MM-DD)</label>
+                            <input type="text" id="gen-date" class="form-control" placeholder="e.g. 2025-12-31">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block mt-15 form-group">Generate link</button>
+                </form>
+                <div class="mt-20 mb-20" style="margin-top: 1rem;"><p class="text-muted font-size-12">
+                    Required: slug + guest. Optional: expires (days) or expires at. Leave blank to never expire.
+                </p></div>
+                <div id="generator-result" class="mt-15"></div>
+            </section>
+
+            <section class="card shadow-lg mb-20">
+                <h2 class="h5 mb-10">Posts · Guests · Tokens</h2>
+                <p class="text-muted mb-15">Each row is a Ghost slug + guest pair. The table shows the latest link and lets you revoke access.</p>
+                {% if pairs %}
+                <div class="table-responsive">
+                    <table class="table table-hover min-table-width">
+                        <thead>
+                            <tr>
+                                <th style="width:50%;">Latest token</th>
+                                <th style="width:12%;">Post (slug)</th>
+                                <th style="width:12%;"> Referrer</th>
+                                <th style="width:12%;">Created</th>
+                                <th style="width:10%;">Expires</th>
+                                <th style="width:4%;">Revoke</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pair in pairs %}
+                            <tr class="{% if pair.expired %}bg-danger-100{% endif %}">
+                                <td>
+                                    <span class="mobile-label">Latest token</span>
+                                    {% if pair.token %}
+                                    <div class="token">
+                                        {{ app_base_url }}/read/{{ pair.token.token }}
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">None yet</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="mobile-label">Post (slug)</span>
+                                    <code>{{ pair.slug }}</code>
+                                </td>
+                                <td>
+                                    <span class="mobile-label">Referrer</span>
+                                    {{ pair.referrer }}
+                                </td>
+                                <td>
+                                    <span class="mobile-label">Created</span>
+                                    {{ pair.created_display or '—' }}
+                                </td>
+                                <td>
+                                    <span class="mobile-label">Expires</span>
+                                    {% set badge_class = 'badge badge-danger' if pair.expired else 'badge badge-info' %}
+                                    <span class="{{ badge_class }}">{{ pair.expires_display }}</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm pair-revoke" data-slug="{{ pair.slug }}" data-ref="{{ pair.referrer }}">
+                                        Revoke
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-actions mt-15">
+                    {% if pair_pages > 1 %}
+                    <div class="pager">
+                        {% if pairs_page > 1 %}
+                        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.admin_dashboard', pairs_page=pairs_page-1, tokens_page=tokens_page) }}">← Previous</a>
+                        {% endif %}
+                        <span>Page {{ pairs_page }} / {{ pair_pages }}</span>
+                        {% if pairs_page < pair_pages %}
+                        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.admin_dashboard', pairs_page=pairs_page+1, tokens_page=tokens_page) }}">Next →</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    <div class="d-flex align-items-center gap-10">
+                        <button id="cleanup-expired" class="btn btn-secondary btn-sm">Clean up expired tokens</button>
+                        <span id="cleanup-status" class="text-muted font-size-12"></span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No guests have access yet. Mint a link to create a row.</p>
+                {% endif %}
+            </section>
+
+            <section class="card shadow-lg">
+                <h2 class="h5 mb-10">Privacy & Housekeeping</h2>
+                <ul class="text-muted mb-0">
+                    <li>Every access log stores IP, user agent, and referer domain. Adjust <code>ACCESS_LOG_RETENTION_DAYS</code> to fit your policy.</li>
+                    <li>Let members know that accesses are tracked.</li>
+                    <li>Use HTTPS, put the gateway behind a proxy/WAF, and rotate admin credentials regularly.</li>
+                </ul>
+            </section>
+
+            <footer class="app-footer text-muted">
+                © {{ current_year }} Ghost FriendLink Gateway · v{{ app_version }}
+                · <a href="https://github.com/hiyukoim/ghost-friendlink-gateway" target="_blank" rel="noopener">Source Code</a>
+            </footer>
         </div>
-        {% if pair_pages > 1 %}
-        <div class="pager">
-        {% if pairs_page > 1 %}
-        <a href="{{ url_for('admin_dashboard', pairs_page=pairs_page-1, tokens_page=tokens_page) }}">← Previous</a>
-        {% endif %}
-        <span>Page {{ pairs_page }} / {{ pair_pages }}</span>
-        {% if pairs_page < pair_pages %}
-        <a href="{{ url_for('admin_dashboard', pairs_page=pairs_page+1, tokens_page=tokens_page) }}">Next →</a>
-        {% endif %}
     </div>
-    {% endif %}
-    
-        {% else %}
-        <p class="empty">No guests have access yet. Mint a link to create a row.</p>
-        {% endif %}
-    </section>
 
-    <section class="card">
-        <h2>Privacy & Housekeeping</h2>
-        <ul style="margin:0;padding-left:1.2rem;color:#475569;line-height:1.5;">
-            <li>Every access log stores IP, user agent, and referer domain for leak detection. Adjust <code>ACCESS_LOG_RETENTION_DAYS</code> or run the cleanup API if you need shorter retention.</li>
-            <li>Let your members know that accesses are tracked; update your privacy policy accordingly.</li>
-            <li>Use HTTPS + a reverse proxy/WAF in production, and rotate the admin login/password + API key periodically.</li>
-        </ul>
-    </section>
-</body>
-<script>
+    <script src="https://cdn.jsdelivr.net/npm/halfmoon/js/halfmoon.min.js" defer></script>
+    <script>
 const form = document.getElementById('generator-form');
 const resultBox = document.getElementById('generator-result');
 const csrfToken = document.body.dataset.csrf || '';
@@ -351,53 +373,32 @@ function withCsrf(headers = {}) {
 
 function showResult(message, isError = false) {
     resultBox.innerHTML = '';
-    const box = document.createElement('div');
-    box.style.padding = '0.8rem 1rem';
-    box.style.borderRadius = '10px';
-    box.style.marginTop = '0.5rem';
-    box.style.background = isError ? '#fee2e2' : '#ecfccb';
-    box.style.color = isError ? '#991b1b' : '#1b4332';
-    box.textContent = message;
-    resultBox.appendChild(box);
+    const alertBox = document.createElement('div');
+    alertBox.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
+    alertBox.textContent = message;
+    resultBox.appendChild(alertBox);
 }
 
 function appendCopyableLinks(entries) {
     resultBox.innerHTML = '';
-    const wrapper = document.createElement('div');
-    wrapper.style.display = 'flex';
-    wrapper.style.flexDirection = 'column';
-    wrapper.style.gap = '0.75rem';
-    wrapper.style.marginTop = '0.5rem';
+    const container = document.createElement('div');
+    container.className = 'd-flex flex-column gap-10';
 
     entries.forEach((entry) => {
         const card = document.createElement('div');
-        card.style.padding = '0.8rem 1rem';
-        card.style.borderRadius = '10px';
-        card.style.background = '#ecfccb';
-        card.style.border = '1px solid #bbf7d0';
-        card.style.display = 'flex';
-        card.style.flexDirection = 'column';
-        card.style.gap = '0.4rem';
+        card.className = 'card shadow-sm text-left p-15';
 
         const meta = document.createElement('div');
-        meta.style.fontSize = '0.9rem';
-        meta.style.color = '#1b4332';
+        meta.className = 'text-muted mb-10';
         meta.innerHTML = `<strong>${entry.ref || 'Guest link'}</strong> · ${entry.slug || ''}`;
 
         const linkBox = document.createElement('div');
-        linkBox.style.fontFamily = '"SFMono-Regular", Consolas, monospace';
-        linkBox.style.wordBreak = 'break-all';
+        linkBox.className = 'token mb-10';
         linkBox.textContent = entry.token_url;
 
         const btn = document.createElement('button');
+        btn.className = 'btn btn-primary btn-sm';
         btn.textContent = 'Copy link';
-        btn.style.alignSelf = 'flex-start';
-        btn.style.padding = '0.45rem 1rem';
-        btn.style.borderRadius = '8px';
-        btn.style.border = 'none';
-        btn.style.background = '#2563eb';
-        btn.style.color = '#fff';
-        btn.style.cursor = 'pointer';
         btn.addEventListener('click', async () => {
             await navigator.clipboard.writeText(entry.token_url);
             btn.textContent = 'Copied!';
@@ -407,20 +408,17 @@ function appendCopyableLinks(entries) {
         card.appendChild(meta);
         card.appendChild(linkBox);
         card.appendChild(btn);
-        wrapper.appendChild(card);
+        container.appendChild(card);
     });
 
-    resultBox.appendChild(wrapper);
+    resultBox.appendChild(container);
 }
 
 form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const slug = document.getElementById('gen-slug').value.trim();
     const refRaw = document.getElementById('gen-ref').value;
-    const refs = refRaw
-        .split(/[\n,]/)
-        .map((value) => value.trim())
-        .filter(Boolean);
+    const refs = refRaw.split(/[\n,]/).map((value) => value.trim()).filter(Boolean);
     const days = document.getElementById('gen-days').value.trim();
     const expiresAt = document.getElementById('gen-date').value.trim();
 
@@ -431,11 +429,7 @@ form?.addEventListener('submit', async (event) => {
 
     try {
         showResult('Generating link…');
-        const payload = {
-            slug,
-            expires_days: days || null,
-            expires_at: expiresAt || null
-        };
+        const payload = { slug, expires_days: days || null, expires_at: expiresAt || null };
         if (refs.length === 1) {
             payload.ref = refs[0];
         } else {
@@ -444,9 +438,7 @@ form?.addEventListener('submit', async (event) => {
 
         const resp = await fetch('/admin/generate', {
             method: 'POST',
-            headers: withCsrf({
-                'Content-Type': 'application/json'
-            }),
+            headers: withCsrf({ 'Content-Type': 'application/json' }),
             credentials: 'same-origin',
             body: JSON.stringify(payload)
         });
@@ -454,11 +446,7 @@ form?.addEventListener('submit', async (event) => {
         if (!resp.ok) {
             throw new Error(data.error || 'Failed to generate link');
         }
-        const entries = Array.isArray(data.tokens)
-            ? data.tokens
-            : data.token_url
-                ? [data]
-                : [];
+        const entries = Array.isArray(data.tokens) ? data.tokens : data.token_url ? [data] : [];
         if (!entries.length) {
             throw new Error('API did not return any tokens.');
         }
@@ -466,37 +454,6 @@ form?.addEventListener('submit', async (event) => {
     } catch (err) {
         showResult(err.message, true);
     }
-});
-
-document.querySelectorAll('.revoke-btn').forEach((button) => {
-    button.addEventListener('click', async () => {
-        const token = button.getAttribute('data-token');
-        const confirmed = confirm(`Are you sure you want to revoke token ${token}? This action cannot be undone.`);
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-            button.disabled = true;
-            button.textContent = 'Revoking…';
-            const resp = await fetch(`/revoke/${encodeURIComponent(token)}`, {
-                method: 'POST',
-                headers: withCsrf(),
-                credentials: 'same-origin'
-            });
-            const data = await resp.json();
-            if (!resp.ok) {
-                throw new Error(data.error || 'Failed to revoke');
-            }
-            button.textContent = 'Revoked';
-            button.style.background = '#dcfce7';
-            button.style.color = '#166534';
-        } catch (err) {
-            alert(err.message);
-            button.disabled = false;
-            button.textContent = 'Revoke';
-        }
-    });
 });
 
 document.querySelectorAll('.pair-revoke').forEach((button) => {
@@ -524,5 +481,40 @@ document.querySelectorAll('.pair-revoke').forEach((button) => {
         }
     });
 });
-</script>
+
+const cleanupButton = document.getElementById('cleanup-expired');
+const cleanupStatus = document.getElementById('cleanup-status');
+cleanupButton?.addEventListener('click', async () => {
+    if (!cleanupButton) return;
+    const confirmed = confirm('Delete all tokens that have already expired? This cannot be undone.');
+    if (!confirmed) return;
+    try {
+        cleanupButton.disabled = true;
+        cleanupButton.textContent = 'Cleaning…';
+        cleanupStatus.textContent = '';
+        const resp = await fetch('/admin/tokens/cleanup', {
+            method: 'POST',
+            headers: withCsrf(),
+            credentials: 'same-origin'
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            throw new Error(data.error || 'Cleanup failed');
+        }
+        cleanupStatus.textContent = `Deleted ${data.deleted} token(s).`;
+        cleanupButton.textContent = 'Done';
+        setTimeout(() => {
+            cleanupButton.textContent = 'Clean up expired tokens';
+            cleanupButton.disabled = false;
+            cleanupStatus.textContent = '';
+            location.reload();
+        }, 1500);
+    } catch (err) {
+        alert(err.message);
+        cleanupButton.textContent = 'Clean up expired tokens';
+        cleanupButton.disabled = false;
+    }
+});
+    </script>
+</body>
 </html>

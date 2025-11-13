@@ -4,7 +4,6 @@ A lightweight Flask-based gateway for sharing private or paid Ghost posts via un
 
 Each token is unique, can be generated per platform ( Ko-fi, Patreon, Gumroad, your mum, etc.), and can be revoked anytime.
 Designed to run seamlessly on **Coolify** or any Docker-based host.
-※ This repo is vibe coded with Chat GPT-5 Codex, Gemini and Claude on Cursor. But I’ve put in a ton of human effort to make it fuctional!💪
 
 ## Features
 
@@ -12,7 +11,7 @@ Designed to run seamlessly on **Coolify** or any Docker-based host.
 - 🧱 Fully environment-variable driven (no hardcoded URLs)  
 - 🪶 Invalid links redirect to your Ghost signup or paywall page  
 - 🧹 Simple SQLite-based token storage  
-- 🎨 Beautiful minimalistic default CSS (customizable via template or `CUSTOM_CSS_URL`)  
+- 🎨 Beautiful minimalistic default CSS (customizable via template or `CUSTOM_CSS_URL`) + optional full landing-page override  
 - 📝 Automatic site metadata fetching from Ghost (title, description)  
 - 🔒 Referrer whitelist management via API (track and control link distribution)  
 - 🎯 Per-post guest allowlists so each member only sees the rooms you assign  
@@ -26,6 +25,12 @@ Designed to run seamlessly on **Coolify** or any Docker-based host.
 - 👥 Bulk link minting: paste up to `MAX_BULK_REFS` comma/newline-separated guests and get copy-ready links in one click  
 - 🛡️ HTTPS enforcement + rate-limited admin endpoints to stop brute-force sharing  
 - ⚡ Compatible with Ghost v5+ and Python 3.11+
+
+## Requirements
+
+- **Runtime:** Python 3.11 (already handled in the Docker image).
+- **Memory:** The Flask process averages ~100–150 MB of RAM, so even the smallest 256 MB container/VM tier is plenty. Give yourself ≥256 MB if you’re unsure so background cron jobs or Ghost fetch spikes have headroom.
+- **Storage:** A few megabytes for the SQLite database (tokens + access logs). Mount `/app/data` to persistent storage if you need history across deploys.
 
 ## Installation
 
@@ -175,6 +180,7 @@ Once the storage is attached, redeploy the app—existing tokens will survive fu
 | `APP_BASE_URL` | Public base URL of this app | `https://gateway.yourdomain.com` |
 | `DEFAULT_REDIRECT` | (Optional) Fallback URL for invalid tokens | `https://yourblog.com/#/portal/signup` |
 | `CUSTOM_CSS_URL` | (Optional) Custom CSS URL to override default CSS | `https://yourblog.com/assets/custom.css` |
+| `HOME_REDIRECT_URL` | (Optional) Redirect `/` to this URL instead of rendering the built-in landing page | `https://yourblog.com` |
 | `SITE_TITLE` | (Optional) Site title (overrides Ghost API fetch) | `My Blog` |
 | `SITE_DESCRIPTION` | (Optional) Site description (overrides Ghost API fetch) | `My blog description` |
 | `SITE_ICON_URL` | (Optional) Custom favicon URL for rendered pages | `https://yourblog.com/favicon.ico` |
@@ -194,6 +200,11 @@ Once the storage is attached, redeploy the app—existing tokens will survive fu
 | `PROXY_FORWARDED_FOR` | Trusted proxy hops for `X-Forwarded-For` | `1` |
 | `PROXY_FORWARDED_PROTO` | Trusted proxy hops for `X-Forwarded-Proto` | `1` |
 | `PORT` | Internal server port | `5000` |
+
+### Custom landing / redirect behavior
+
+- Rename `template/index.html.template` to `template/index.html` to fully override the built-in app landing page shown at `/`.
+- Set `HOME_REDIRECT_URL` if you prefer `/` to redirect straight to your Ghost blog, marketing site, or another app (e.g. `HOME_REDIRECT_URL=${GHOST_URL}` in your `.env`). The redirect takes precedence over the template override, so leave it blank when you want the local landing page to render.
 
 ## Example Usage
 
@@ -421,6 +432,10 @@ The app includes minimalistic default CSS in `static/style.css`. You have three 
 **Site Metadata**: The app automatically fetches site title and description from Ghost's Content API. You can override these by setting `SITE_TITLE` and `SITE_DESCRIPTION` environment variables.
 
 ## Credits
+This repo is vibe coded with bunch of my AI fellows (Chat GPT-5 Codex, Perplexity, Gemini and Claude on Cursor!) But I’ve put in a fair amount (actually a ton) of human effort to make it fuctional!💪
+
+UI styling uses the [Halfmoon CSS framework](https://www.gethalfmoon.com/) (MIT License).  
+© Halfmoon UI — source: https://github.com/halfmoonui/halfmoon
 
 This project was inspired by [ghost-iota-pay](https://github.com/F-Node-Karlsruhe/ghost-iota-pay) by F-Node-Karlsruhe,  
 which implements a pay-per-content system for Ghost using IOTA payments.  
