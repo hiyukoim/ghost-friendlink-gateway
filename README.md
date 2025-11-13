@@ -26,6 +26,12 @@ Designed to run seamlessly on **Coolify** or any Docker-based host.
 - 🛡️ HTTPS enforcement + rate-limited admin endpoints to stop brute-force sharing  
 - ⚡ Compatible with Ghost v5+ and Python 3.11+
 
+## Requirements
+
+- **Runtime:** Python 3.11 (already handled in the Docker image).
+- **Memory:** The Flask process averages ~100–150 MB of RAM, so even the smallest 256 MB container/VM tier is plenty. Give yourself ≥256 MB if you’re unsure so background cron jobs or Ghost fetch spikes have headroom.
+- **Storage:** A few megabytes for the SQLite database (tokens + access logs). Mount `/app/data` to persistent storage if you need history across deploys.
+
 ## Installation
 
 ### In Docker

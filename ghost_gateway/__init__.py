@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from flask import Flask, jsonify, request
 
 from ghost_gateway import db as db_utils
@@ -7,10 +9,16 @@ from ghost_gateway.config import configure_app, settings
 from ghost_gateway.routes import register_blueprints
 
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+TEMPLATE_FOLDER = BASE_DIR / "templates"
+STATIC_FOLDER = TEMPLATE_FOLDER / "assets"
+
+
 def create_app() -> Flask:
     app = Flask(
         __name__,
-        static_folder="templates/assets",
+        template_folder=str(TEMPLATE_FOLDER),
+        static_folder=str(STATIC_FOLDER),
         static_url_path="/assets",
     )
     configure_app(app, settings)
