@@ -60,7 +60,55 @@
             color: inherit;
             text-decoration: underline;
         }
+        .dashboard-header {
+            margin-bottom: 2.5rem;
+            gap: 1rem;
+        }
+        .dashboard-title {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .dashboard-title .dash-heading {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .dashboard-actions {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 0.6rem;
+            align-items: center;
+            justify-content: flex-end;
+            flex: 0 0 auto;
+        }
+        .dashboard-actions .btn,
+        .dashboard-actions form button {
+            white-space: nowrap;
+            flex: 0 0 auto;
+            min-height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding-inline: 0.8rem;
+        }
+        .dashboard-actions .btn svg {
+            width: 15px;
+            height: 15px;
+        }
         @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .dashboard-actions {
+                width: 100%;
+                justify-content: flex-start;
+                gap: 0.5rem;
+            }
+            .dashboard-actions .btn,
+            .dashboard-actions form button {
+                padding-inline: 0.65rem;
+            }
             .table-responsive {
                 overflow: visible;
             }
@@ -89,9 +137,6 @@
                 margin-left: auto;
             }
         }
-        .dashboard-header {
-            margin-bottom: 2.5rem;
-        }
         .first-panel {
             margin-top: 2.25rem;
         }
@@ -113,14 +158,14 @@
 <body class="with-custom-webkit-scrollbars with-custom-css-scrollbars" data-csrf="{{ csrf_token }}" data-admin="{{ admin_username }}">
     <div class="page-wrapper">
         <div class="content-wrapper container-lg py-30">
-            <div class="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-start gap-15">
-                <div>
-                    <h1 class="h2 mb-2">Ghost Friend Link Gateway Dashboard | {{ site.title }}</h1>
+            <div class="dashboard-header d-flex flex-column flex-md-row align-items-start align-items-md-center gap-15">
+                <div class="dashboard-title">
+                    <h1 class="h2 mb-2 dash-heading">Ghost Friend Link Gateway Dashboard | {{ site.title }}</h1>
                     <p class="text-muted mb-1">Ghost Friend Link Gateway - Signed in as {{ admin_username }}</p>
                 </div>
-                <div class="d-flex flex-wrap align-items-center gap-10">
+                <div class="dashboard-actions justify-content-md-end">
                     {% if ghost_url %}
-                    <a href="{{ ghost_url }}" target="_blank" rel="noopener" class="btn btn-secondary">Go to Ghost</a>
+                    <a href="{{ ghost_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Go to Ghost</a>
                     {% endif %}
                     <button class="btn btn-secondary btn-sm theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="currentColor" width="18" height="18">
@@ -129,7 +174,7 @@
                     </button>
                     <form method="post" action="{{ url_for('admin.admin_logout') }}" class="m-0">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button type="submit" class="btn btn-light">Log out</button>
+                        <button type="submit" class="btn btn-light btn-sm">Log out</button>
                     </form>
                 </div>
             </div>
@@ -243,6 +288,11 @@
                     <li>Use HTTPS, put the gateway behind a proxy/WAF, and rotate admin credentials regularly.</li>
                 </ul>
             </section>
+
+            <footer class="app-footer text-muted">
+                © {{ current_year }} Ghost FriendLink Gateway · v{{ app_version }}
+                · <a href="https://github.com/hiyukoim/ghost-friendlink-gateway" target="_blank" rel="noopener">Source Code</a>
+            </footer>
         </div>
     </div>
 

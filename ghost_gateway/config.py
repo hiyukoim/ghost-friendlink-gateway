@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import datetime
 import os
+import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-import subprocess
 
 from flask import Flask
 from flask_limiter import Limiter
@@ -126,11 +127,16 @@ def _detect_version() -> str:
     repo_root = Path(__file__).resolve().parent.parent
     try:
         output = subprocess.check_output(
-            ["git", "describe", "--tags", "--always"],
+            ["git", "describe", "--tags", "--match", "v*.*.*", "--long"],
             cwd=repo_root,
             stderr=subprocess.DEVNULL,
         )
         version = output.decode().strip()
+        match = re.match(r"v(\d+\.\d+)\.(\d+)-(\d+)-g[0-9a-f]+", version)
+        if match:
+            base = match.group(1)
+            patch = match.group(3)
+            return f"{base}.{patch}"
         if version:
             return version
     except Exception:
