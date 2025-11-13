@@ -4,16 +4,29 @@ import datetime
 import jwt
 import requests
 
+from flask import current_app
+
 from .config import settings
 
 
+class GhostAdminKeyError(RuntimeError):
+    """Raised when the Ghost Admin API key is missing or malformed."""
+
+
 def make_ghost_admin_jwt() -> str:
-    key_id, secret = settings.ghost_admin_key.split(':')
+    key = settings.ghost_admin_key or ""
+    if ":" not in key:
+        raise GhostAdminKeyError("GHOST_ADMIN_KEY is missing or malformed. Expected 'id:secret'.")
+    key_id, secret = key.split(":", 1)
+    try:
+        secret_bytes = bytes.fromhex(secret)
+    except ValueError as exc:
+        raise GhostAdminKeyError("GHOST_ADMIN_KEY secret must be hex-encoded.") from exc
     iat = int(datetime.datetime.utcnow().timestamp())
     exp = iat + 5 * 60
     header = {'alg': 'HS256', 'kid': key_id}
     payload = {'iat': iat, 'exp': exp, 'aud': '/v5/admin/'}
-    token = jwt.encode(payload, bytes.fromhex(secret), algorithm='HS256', headers=header)
+    token = jwt.encode(payload, secret_bytes, algorithm='HS256', headers=header)
     return token
 
 

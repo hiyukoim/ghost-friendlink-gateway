@@ -7,6 +7,7 @@ from flask import Blueprint, current_app, redirect, render_template, request
 
 from ghost_gateway import db as db_utils
 from ghost_gateway import ghost as ghost_utils
+from ghost_gateway.ghost import GhostAdminKeyError
 from ghost_gateway.config import settings
 
 public_bp = Blueprint("public", __name__)
@@ -75,9 +76,12 @@ def read_post(token):
 
     try:
         jwt_token = ghost_utils.make_ghost_admin_jwt()
+    except GhostAdminKeyError as exc:
+        current_app.logger.error("Ghost admin key misconfigured: %s", exc)
+        return redirect(DEFAULT_REDIRECT or f"{settings.ghost_url}/{slug}/")
     except Exception:  # pragma: no cover - misconfigured key
         current_app.logger.exception("Failed to build Ghost admin JWT for slug %s", slug)
-        return redirect(f"{settings.ghost_url}/{slug}/")
+        return redirect(DEFAULT_REDIRECT or f"{settings.ghost_url}/{slug}/")
     headers = {"Authorization": f"Ghost {jwt_token}"}
     try:
         response = requests.get(
