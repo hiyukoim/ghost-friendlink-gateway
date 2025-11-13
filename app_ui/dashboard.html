@@ -34,14 +34,15 @@
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            display: table;
         }
         th, td {
-            text-align: left;
             padding: 0.6rem;
             border-bottom: 1px solid #e5e7eb;
             word-wrap: break-word;
             word-break: break-word;
+        }
+        th {
+            text-align: left;
         }
         th {
             font-size: 0.85rem;
@@ -175,7 +176,7 @@
             padding: 0.15rem 0.4rem;
             border-radius: 6px;
         }
-        @media (max-width: 1024px) {
+        @media (max-width: 600px) {
             body {
                 padding: 1rem;
             }
@@ -274,11 +275,11 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Latest token</th>
-                        <th>Post (slug)</th>
-                        <th>Guest / Referrer</th>
-                        <th>Created</th>
-                        <th>Revoke</th>
+                        <th style="width:52%;">Latest token</th>
+                        <th style="width:12%;">Post (slug)</th>
+                        <th style="width:12%;">Guest / Referrer</th>
+                        <th style="width:12%;">Created</th>
+                        <th style="width:12%; white-space: nowrap;">Revoke</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -303,7 +304,7 @@
                             {% endif %}
                         </td>
                         <td data-label="Revoke">
-                            <button class="pair-revoke" data-slug="{{ pair.slug }}" data-ref="{{ pair.referrer }}">Revoke access</button>
+                            <button class="pair-revoke" data-slug="{{ pair.slug }}" data-ref="{{ pair.referrer }}">Revoke</button>
                         </td>
                     </tr>
                     {% endfor %}

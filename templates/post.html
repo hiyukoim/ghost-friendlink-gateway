@@ -80,7 +80,7 @@
                     {% endif %}
                 </div>
                 <div>
-                    <strong class="author-name">{{ primary_author.name if primary_author else "site.title" }}</strong>
+                    <strong class="author-name">{{ primary_author.name if primary_author else site.title }}</strong>
                     {% if primary_author and primary_author.location %}
                     <span class="author-location">{{ primary_author.location }}</span>
                     {% endif %}
@@ -125,7 +125,7 @@
             </div>
             <div>
                 <p class="written-by-label">Written by</p>
-                <h3 class="written-by-name">{{ primary_author.name if primary_author else "Guest Author" }}</h3>
+                <h3 class="written-by-name">{{ primary_author.name if primary_author else site.title }}</h3>
                 {% if primary_author and primary_author.bio %}
                 <p class="written-by-bio">{{ primary_author.bio }}</p>
                 {% endif %}

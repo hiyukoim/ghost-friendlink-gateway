@@ -155,40 +155,23 @@ def make_ghost_admin_jwt():
 
 
 def ghost_api_url(slug):
-    fields = ",".join([
-        # Core fields shown in the template
-        "title",
-        "slug",
-        "html",
-        "excerpt",
-        "custom_excerpt",
-        "feature_image",
-        "feature_image_alt",
-        "feature_image_caption",
-        "reading_time",
-        "published_at",
-        "updated_at",
-        # Helpful metadata for advanced templates
-        "feature_image_alt",
-        "status",
-        "email_only",
-        "canonical_url",
-        "url",
-        # Post-level SEO/meta
-        "meta_title",
-        "meta_description",
-        "og_title",
-        "og_description",
-        "og_image",
-        "twitter_title",
-        "twitter_description",
-        "twitter_image",
-        "primary_author",
-        "primary_tag",
-    ])
+    # NOTE: Keeping the explicit field list here for future tuning, but defaulting
+    # to Ghost's full payload for now to avoid missing data regressions.
+    # fields = ",".join([
+    #     "title", "slug", "html", "excerpt", "custom_excerpt",
+    #     "feature_image", "feature_image_alt", "feature_image_caption",
+    #     "reading_time", "published_at", "updated_at",
+    #     "status", "email_only", "canonical_url", "url",
+    #     "meta_title", "meta_description",
+    #     "og_title", "og_description", "og_image",
+    #     "twitter_title", "twitter_description", "twitter_image",
+    #     "primary_author", "primary_tag",
+    # ])
     return (
         f"{GHOST_URL}/ghost/api/admin/posts/slug/{slug}/"
-        f"?formats=html&include=authors,tags&fields={fields}"
+        f"?formats=html&include=authors,tags"
+        # Uncomment to re-enable field filtering:
+        # f"&fields={fields}"
     )
 
 
