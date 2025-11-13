@@ -49,6 +49,30 @@ class Settings:
     app_ui_folder: Path
 
 
+def _detect_version() -> str:
+    env_version = os.getenv("APP_VERSION")
+    if env_version:
+        return env_version.strip()
+    repo_root = Path(__file__).resolve().parent.parent
+    try:
+        output = subprocess.check_output(
+            ["git", "describe", "--tags", "--match", "v*.*.*", "--long"],
+            cwd=repo_root,
+            stderr=subprocess.DEVNULL,
+        )
+        version = output.decode().strip()
+        match = re.match(r"v(\d+\.\d+)\.(\d+)-(\d+)-g[0-9a-f]+", version)
+        if match:
+            base = match.group(1)
+            patch = match.group(3)
+            return f"{base}.{patch}"
+        if version:
+            return version
+    except Exception:
+        pass
+    return "dev"
+
+
 def _env_bool(name: str, default: str = "false") -> bool:
     return os.getenv(name, default).lower() == "true"
 
@@ -94,8 +118,6 @@ def load_settings() -> Settings:
     )
 
 
-settings = load_settings()
-
 limiter = Limiter(get_remote_address, default_limits=[])
 
 
@@ -120,25 +142,4 @@ def configure_app(app: Flask, settings: Settings) -> None:
         )
 
 
-def _detect_version() -> str:
-    env_version = os.getenv("APP_VERSION")
-    if env_version:
-        return env_version.strip()
-    repo_root = Path(__file__).resolve().parent.parent
-    try:
-        output = subprocess.check_output(
-            ["git", "describe", "--tags", "--match", "v*.*.*", "--long"],
-            cwd=repo_root,
-            stderr=subprocess.DEVNULL,
-        )
-        version = output.decode().strip()
-        match = re.match(r"v(\d+\.\d+)\.(\d+)-(\d+)-g[0-9a-f]+", version)
-        if match:
-            base = match.group(1)
-            patch = match.group(3)
-            return f"{base}.{patch}"
-        if version:
-            return version
-    except Exception:
-        pass
-    return "dev"
+settings = load_settings()
