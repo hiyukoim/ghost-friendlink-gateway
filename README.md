@@ -443,5 +443,10 @@ This project only takes inspiration from its private sharing mechanism, which al
 
 ---
 
+<a href="https://buymeacoffee.com/hiyukoim">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" width="180" />
+</a>
+
+
 AGPL-3.0 License  
 © 2025 Yuko F.
