@@ -33,11 +33,15 @@
         table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
+            display: table;
         }
         th, td {
             text-align: left;
             padding: 0.6rem;
             border-bottom: 1px solid #e5e7eb;
+            word-wrap: break-word;
+            word-break: break-word;
         }
         th {
             font-size: 0.85rem;
@@ -65,6 +69,7 @@
             font-family: "SFMono-Regular", Consolas, Monaco, "Liberation Mono", monospace;
             font-size: 0.85rem;
             color: #475569;
+            word-break: break-all;
         }
         .empty {
             color: #94a3b8;
@@ -170,7 +175,7 @@
             padding: 0.15rem 0.4rem;
             border-radius: 6px;
         }
-        @media (max-width: 720px) {
+        @media (max-width: 1024px) {
             body {
                 padding: 1rem;
             }

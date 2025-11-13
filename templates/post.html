@@ -76,11 +76,11 @@
                     {% if primary_author and primary_author.profile_image %}
                     <img src="{{ primary_author.profile_image }}" alt="{{ primary_author.name }}">
                     {% else %}
-                    <img src="{{ profile_image　or site.icon' }}" alt="Author avatar">
+                    <img src="{{ site.icon or site.logo }}" alt="Author avatar">
                     {% endif %}
                 </div>
                 <div>
-                    <strong class="author-name">{{ primary_author.name if primary_author else "Guest Author" }}</strong>
+                    <strong class="author-name">{{ primary_author.name if primary_author else "site.title" }}</strong>
                     {% if primary_author and primary_author.location %}
                     <span class="author-location">{{ primary_author.location }}</span>
                     {% endif %}
@@ -120,7 +120,7 @@
                 {% if primary_author and primary_author.profile_image %}
                 <img src="{{ primary_author.profile_image }}" alt="{{ primary_author.name }}">
                 {% else %}
-                <img src="{{ profile_image or site.icon }}" alt="Author avatar">
+                <img src="{{ site.icon or site.logo }}" alt="Author avatar">
                 {% endif %}
             </div>
             <div>
