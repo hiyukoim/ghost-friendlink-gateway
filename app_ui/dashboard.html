@@ -95,6 +95,13 @@
             width: 15px;
             height: 15px;
         }
+        .mobile-label {
+            display: none;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            color: rgba(255, 255, 255, 0.65);
+        }
         @media (max-width: 768px) {
             .dashboard-header {
                 flex-direction: column;
@@ -135,6 +142,10 @@
             .table-hover tbody td:last-child {
                 width: auto;
                 margin-left: auto;
+            }
+            .mobile-label {
+                display: block;
+                margin-bottom: 0.15rem;
             }
         }
         .first-panel {
@@ -191,7 +202,7 @@
                         <small class="text-muted">Your Ghost URL segment (e.g. <code>https://yourblog.com/<b>SLUG</b>/</code>).</small>
                     </div>
                     <div class="form-group">
-                        <label for="gen-ref">Guest / Referrer</label>
+                        <label for="gen-ref">Referrer</label>
                         <textarea id="gen-ref" rows="3" class="form-control" required placeholder="alice@example.com, bob@example.com"></textarea>
                         <small class="text-muted">Comma or newline separated for bulk (up to {{ max_bulk_refs }} entries).</small>
                     </div>
@@ -223,7 +234,7 @@
                             <tr>
                                 <th style="width:50%;">Latest token</th>
                                 <th style="width:12%;">Post (slug)</th>
-                                <th style="width:12%;">Guest / Referrer</th>
+                                <th style="width:12%;"> Referrer</th>
                                 <th style="width:12%;">Created</th>
                                 <th style="width:10%;">Expires</th>
                                 <th style="width:4%;">Revoke</th>
@@ -233,6 +244,7 @@
                             {% for pair in pairs %}
                             <tr class="{% if pair.expired %}bg-danger-100{% endif %}">
                                 <td>
+                                    <span class="mobile-label">Latest token</span>
                                     {% if pair.token %}
                                     <div class="token">
                                         {{ app_base_url }}/read/{{ pair.token.token }}
@@ -241,10 +253,20 @@
                                     <span class="text-muted">None yet</span>
                                     {% endif %}
                                 </td>
-                                <td><code>{{ pair.slug }}</code></td>
-                                <td>{{ pair.referrer }}</td>
-                                <td>{{ pair.created_display or '—' }}</td>
                                 <td>
+                                    <span class="mobile-label">Post (slug)</span>
+                                    <code>{{ pair.slug }}</code>
+                                </td>
+                                <td>
+                                    <span class="mobile-label">Referrer</span>
+                                    {{ pair.referrer }}
+                                </td>
+                                <td>
+                                    <span class="mobile-label">Created</span>
+                                    {{ pair.created_display or '—' }}
+                                </td>
+                                <td>
+                                    <span class="mobile-label">Expires</span>
                                     {% set badge_class = 'badge badge-danger' if pair.expired else 'badge badge-info' %}
                                     <span class="{{ badge_class }}">{{ pair.expires_display }}</span>
                                 </td>
