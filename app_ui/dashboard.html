@@ -51,7 +51,7 @@
                     {% if ghost_url %}
                     <a href="{{ ghost_url }}" target="_blank" rel="noopener" class="btn btn-secondary">Visit Ghost</a>
                     {% endif %}
-                    <form method="post" action="{{ url_for('admin_logout') }}" class="m-0">
+                    <form method="post" action="{{ url_for('admin.admin_logout') }}" class="m-0">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <button type="submit" class="btn btn-light">Log out</button>
                     </form>
@@ -141,11 +141,11 @@
                     {% if pair_pages > 1 %}
                     <div class="d-flex align-items-center gap-10">
                         {% if pairs_page > 1 %}
-                        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin_dashboard', pairs_page=pairs_page-1, tokens_page=tokens_page) }}">← Previous</a>
+                        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.admin_dashboard', pairs_page=pairs_page-1, tokens_page=tokens_page) }}">← Previous</a>
                         {% endif %}
                         <span>Page {{ pairs_page }} / {{ pair_pages }}</span>
                         {% if pairs_page < pair_pages %}
-                        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin_dashboard', pairs_page=pairs_page+1, tokens_page=tokens_page) }}">Next →</a>
+                        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.admin_dashboard', pairs_page=pairs_page+1, tokens_page=tokens_page) }}">Next →</a>
                         {% endif %}
                     </div>
                     {% endif %}

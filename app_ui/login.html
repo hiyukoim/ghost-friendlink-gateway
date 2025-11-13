@@ -49,7 +49,7 @@
                     {{ error }}
                 </div>
                 {% endif %}
-                <form method="post" action="{{ url_for('admin_login', next=next_url) }}" class="w-full">
+                <form method="post" action="{{ url_for('admin.admin_login', next=next_url) }}" class="w-full">
                     <div class="form-group">
                         <label for="username">Username</label>
                         <input type="text"

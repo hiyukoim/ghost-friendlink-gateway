@@ -10,14 +10,21 @@
         body {
             min-height: 100vh;
         }
+        .hero-shell {
+            min-height: calc(100vh - 4rem);
+        }
         .hero-card {
             width: min(600px, 100%);
+            padding: 2.5rem;
         }
         .theme-toggle {
             position: fixed;
             top: 1rem;
             right: 1rem;
             z-index: 1000;
+        }
+        .hero-actions {
+            gap: 1.25rem;
         }
     </style>
     <script>
@@ -41,16 +48,16 @@
         </svg>
     </button>
     <div class="page-wrapper">
-        <div class="content-wrapper d-flex flex-column align-items-center justify-content-center text-center py-40 px-20">
+        <div class="content-wrapper hero-shell d-flex flex-column align-items-center justify-content-center text-center py-30 px-20">
             <div class="card hero-card shadow-lg mx-auto">
-                <h1 class="font-size-24 mb-10">Ghost FriendLink Gateway</h1>
-                <p class="text-muted mb-20">
+                <h1 class="font-size-24 mb-15">Ghost FriendLink Gateway</h1>
+                <p class="text-muted mb-25">
                     Generate per-guest access links for private Ghost posts. Manage referrers, revoke tokens, and audit usage —
                     all from a lightweight dashboard.
                 </p>
-                <div class="d-flex flex-column gap-10">
-                    <a href="/admin/login" class="btn btn-primary btn-block">Sign in to dashboard</a>
-                    <a href="https://github.com/hiyukoim/ghost-friendlink-gateway" class="btn btn-secondary btn-block" target="_blank" rel="noopener">
+                <div class="d-flex flex-column hero-actions">
+                    <a href="/admin/login" class="btn btn-primary btn-block py-12">Sign in to dashboard</a>
+                    <a href="https://github.com/hiyukoim/ghost-friendlink-gateway" class="btn btn-secondary btn-block py-12" target="_blank" rel="noopener">
                         View documentation
                     </a>
                 </div>
