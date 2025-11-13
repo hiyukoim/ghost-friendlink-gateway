@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+   <meta charset="UTF-8">
+    <title>Landing page template</title>  
+<body>
+
+<h1>Landing page template</h1>
+
+<p>This template is customizable. Design as crazy you like first. You can use app tags too. Then simply rename the file to index.html (remove the .template extension) to set up your app's home. Alternatively, you can redirect to your Ghost blog using the <code>HOME_REDIRECT_URL</code> setting in the .env file. </br>
+Please note that the app landing page is not meant to be widely available. For example, avoid search engine indexing. It is intended only for fallback purposes. </p>
+</body>
+</html>

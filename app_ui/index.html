@@ -1,48 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-core="elegant">
 <head>
     <meta charset="UTF-8">
     <title>Ghost FriendLink Gateway</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.2/css/halfmoon.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.2/css/cores/halfmoon.elegant.css">
     <style>
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
-            margin: 0;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
         }
-        .card {
-            background: rgba(15, 23, 42, 0.85);
-            border-radius: 16px;
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            padding: 2rem;
-            max-width: 520px;
-            box-shadow: 0 30px 80px rgba(15, 23, 42, 0.5);
+        .hero-card {
+            width: min(600px, 100%);
         }
-        h1 {
-            margin-top: 0;
-            font-size: 1.8rem;
-        }
-        p {
-            line-height: 1.6;
-            color: #94a3b8;
-        }
-        a {
-            color: #38bdf8;
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
         }
     </style>
+    <script>
+        function updateTheme() {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.setAttribute('data-bs-theme', prefersDark ? 'dark' : 'light');
+        }
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-bs-theme');
+            html.setAttribute('data-bs-theme', current === 'dark' ? 'light' : 'dark');
+        }
+        updateTheme();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateTheme);
+    </script>
 </head>
-<body>
-    <div class="card">
-        <h1>Ghost FriendLink Gateway</h1>
-        <p>This service generates per-member share links for private Ghost posts. Sign in via <code>/admin/login</code> to mint and manage tokens, or call the JSON APIs with <code>ADMIN_API_KEY</code>.</p>
-        <p>Refer to the repository README for setup, privacy considerations, and API details.</p>
-        <p><a href="https://github.com/hiyukoim/ghost-friendlink-gateway" target="_blank" rel="noopener">View documentation</a></p>
+<body class="with-custom-webkit-scrollbars with-custom-css-scrollbars">
+    <button class="btn btn-secondary btn-sm theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="currentColor" width="18" height="18">
+            <path d="M303.3 112.7C196.2 121.2 112 210.8 112 320C112 434.9 205.1 528 320 528C353.3 528 384.7 520.2 412.6 506.3C309.2 482.9 232 390.5 232 280C232 214.2 259.4 154.9 303.3 112.7zM64 320C64 178.6 178.6 64 320 64C339.4 64 358.4 66.2 376.7 70.3C386.6 72.5 394 80.8 395.2 90.8C396.4 100.8 391.2 110.6 382.1 115.2C321.5 145.4 280 207.9 280 280C280 381.6 362.4 464 464 464C469 464 473.9 463.8 478.8 463.4C488.9 462.6 498.4 468.2 502.6 477.5C506.8 486.8 504.6 497.6 497.3 504.6C451.3 548.8 388.8 576 320 576C178.6 576 64 461.4 64 320z"/>
+        </svg>
+    </button>
+    <div class="page-wrapper">
+        <div class="content-wrapper d-flex flex-column align-items-center justify-content-center text-center py-40 px-20">
+            <div class="card hero-card shadow-lg mx-auto">
+                <h1 class="font-size-24 mb-10">Ghost FriendLink Gateway</h1>
+                <p class="text-muted mb-20">
+                    Generate per-guest access links for private Ghost posts. Manage referrers, revoke tokens, and audit usage —
+                    all from a lightweight dashboard.
+                </p>
+                <div class="d-flex flex-column gap-10">
+                    <a href="/admin/login" class="btn btn-primary btn-block">Sign in to dashboard</a>
+                    <a href="https://github.com/hiyukoim/ghost-friendlink-gateway" class="btn btn-secondary btn-block" target="_blank" rel="noopener">
+                        View documentation
+                    </a>
+                </div>
+            </div>
+            <p class="text-muted mt-20 mb-0">
+                Need a custom landing page? Drop <code>template/index.html</code> into the repo or set <code>HOME_REDIRECT_URL</code>.
+            </p>
+        </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/halfmoon/js/halfmoon.min.js" defer></script>
 </body>
 </html>
