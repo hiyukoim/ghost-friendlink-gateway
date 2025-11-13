@@ -82,6 +82,20 @@
         .revoke-btn:hover {
             background: #fecaca;
         }
+        .pair-revoke {
+            padding: 0.4rem 0.9rem;
+            border-radius: 10px;
+            border: none;
+            background: #fee2e2;
+            color: #991b1b;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            max-width: 160px;
+        }
+        .pair-revoke:hover {
+            background: #fecaca;
+        }
         .ref-action {
             padding: 0.35rem 0.8rem;
             border-radius: 8px;
@@ -118,6 +132,9 @@
             font-size: 0.8rem;
             padding: 0;
         }
+        .table-wrap {
+            width: 100%;
+        }
         .post-add,
         .guest-remove {
             padding: 0.3rem 0.8rem;
@@ -127,6 +144,22 @@
             color: #0ea5e9;
             font-weight: 600;
             cursor: pointer;
+        }
+        .pager {
+            margin-top: 1rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+        .pager a {
+            font-weight: 600;
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .pager a:hover {
+            text-decoration: underline;
         }
         .post-add:hover,
         .guest-remove:hover {
@@ -141,8 +174,41 @@
             body {
                 padding: 1rem;
             }
-            table {
-                font-size: 0.9rem;
+            table thead {
+                display: none;
+            }
+            table,
+            tbody,
+            tr,
+            td {
+                display: block;
+                width: 100%;
+            }
+            tbody {
+                border-radius: 12px;
+            }
+            tr {
+                margin-bottom: 1rem;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 0.6rem 0.75rem;
+            }
+            td {
+                border: none;
+                padding: 0.4rem 0;
+            }
+            td::before {
+                content: attr(data-label);
+                display: block;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #94a3b8;
+                margin-bottom: 0.15rem;
+            }
+            .pair-revoke {
+                max-width: none;
             }
         }
     </style>
@@ -199,44 +265,58 @@
         <h2>Posts · Guests · Tokens</h2>
         <p style="color:#64748b;font-size:0.9rem;">Each row is a Ghost slug + guest pair. The table shows the latest link (if any) and lets you revoke access instantly.</p>
         {% if pairs %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Latest token</th>
-                    <th>Post (slug)</th>
-                    <th>Guest / Referrer</th>
-                    <th>Created</th>
-                    <th>Revoke</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for pair in pairs %}
-                <tr>
-                    <td>
-                        {% if pair.token %}
-                        <div class="token">
-                            {{ app_base_url }}/read/{{ pair.token.token }}
-                        </div>
-                        {% else %}
-                        <span class="empty">None yet</span>
-                        {% endif %}
-                    </td>
-                    <td><code>{{ pair.slug }}</code></td>
-                    <td>{{ pair.referrer }}</td>
-                    <td>
-                        {% if pair.token %}
-                        {{ pair.token.created_at or '—' }}
-                        {% else %}
-                        {{ pair.granted_at or '—' }}
-                        {% endif %}
-                    </td>
-                    <td>
-                        <button class="pair-revoke" data-slug="{{ pair.slug }}" data-ref="{{ pair.referrer }}">Revoke access</button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Latest token</th>
+                        <th>Post (slug)</th>
+                        <th>Guest / Referrer</th>
+                        <th>Created</th>
+                        <th>Revoke</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pair in pairs %}
+                    <tr>
+                        <td data-label="Latest token">
+                            {% if pair.token %}
+                            <div class="token">
+                                {{ app_base_url }}/read/{{ pair.token.token }}
+                            </div>
+                            {% else %}
+                            <span class="empty">None yet</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Post (slug)"><code>{{ pair.slug }}</code></td>
+                        <td data-label="Guest / Referrer">{{ pair.referrer }}</td>
+                        <td data-label="Created">
+                            {% if pair.token %}
+                            {{ pair.token.created_at or '—' }}
+                            {% else %}
+                            {{ pair.granted_at or '—' }}
+                            {% endif %}
+                        </td>
+                        <td data-label="Revoke">
+                            <button class="pair-revoke" data-slug="{{ pair.slug }}" data-ref="{{ pair.referrer }}">Revoke access</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if pair_pages > 1 %}
+        <div class="pager">
+        {% if pairs_page > 1 %}
+        <a href="{{ url_for('admin_dashboard', pairs_page=pairs_page-1, tokens_page=tokens_page) }}">← Previous</a>
+        {% endif %}
+        <span>Page {{ pairs_page }} / {{ pair_pages }}</span>
+        {% if pairs_page < pair_pages %}
+        <a href="{{ url_for('admin_dashboard', pairs_page=pairs_page+1, tokens_page=tokens_page) }}">Next →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
         {% else %}
         <p class="empty">No guests have access yet. Mint a link to create a row.</p>
         {% endif %}

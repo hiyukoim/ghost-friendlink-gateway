@@ -183,6 +183,8 @@ def ghost_api_url(slug):
         "twitter_title",
         "twitter_description",
         "twitter_image",
+        "primary_author",
+        "primary_tag",
     ])
     return (
         f"{GHOST_URL}/ghost/api/admin/posts/slug/{slug}/"
@@ -1125,6 +1127,7 @@ def admin_dashboard():
     requested_pairs_page = parse_positive_int(request.args.get("pairs_page", 1), 1)
     requested_tokens_page = parse_positive_int(request.args.get("tokens_page", 1), 1)
     
+    latest_token_map = {}
     with sqlite3.connect(DB_PATH) as conn:
         pair_total = conn.execute(
             "SELECT COUNT(*) FROM referrer_posts WHERE active = 1"
@@ -1145,18 +1148,22 @@ def admin_dashboard():
             "SELECT token, slug, referrer, created_at, expires_at, valid FROM tokens ORDER BY created_at DESC LIMIT ? OFFSET ?",
             (tokens_per_page, tokens_offset)
         ).fetchall()
-    
-    latest_token_map = {}
-    for token, slug, referrer, created_at, expires_at, valid in token_rows:
-        key = (referrer, slug)
-        if key in latest_token_map:
-            continue
-        latest_token_map[key] = {
-            "token": token,
-            "created_at": created_at,
-            "expires_at": expires_at,
-            "valid": bool(valid)
-        }
+
+        pair_keys = {(ref, slug) for slug, ref, _ in pair_rows}
+        if pair_keys:
+            cursor = conn.cursor()
+            for ref, slug in pair_keys:
+                latest_row = cursor.execute(
+                    "SELECT token, created_at, expires_at, valid FROM tokens WHERE referrer = ? AND slug = ? ORDER BY created_at DESC LIMIT 1",
+                    (ref, slug)
+                ).fetchone()
+                if latest_row:
+                    latest_token_map[(ref, slug)] = {
+                        "token": latest_row[0],
+                        "created_at": latest_row[1],
+                        "expires_at": latest_row[2],
+                        "valid": bool(latest_row[3])
+                    }
     
     pairs = [
         {

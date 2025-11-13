@@ -4,7 +4,7 @@ A lightweight Flask-based gateway for sharing private or paid Ghost posts via un
 
 Each token is unique, can be generated per platform ( Ko-fi, Patreon, Gumroad, your mum, etc.), and can be revoked anytime.
 Designed to run seamlessly on **Coolify** or any Docker-based host.
-※ This repo is vibe coded with Chat GPT-5 Codex, Gemini and Claude on Cursor (vibe coded!)
+※ This repo is vibe coded with Chat GPT-5 Codex, Gemini and Claude on Cursor. But I’ve put in a ton of human effort to make it fuctional!💪
 
 ## Features
 
