@@ -573,6 +573,33 @@ def cleanup_access_logs():
         )
 
 
+@admin_bp.route("/admin/tokens/cleanup", methods=["POST"])
+@limiter.limit(ADMIN_RATE_LIMIT)
+def cleanup_expired_tokens():
+    if not auth_utils.check_admin_auth():
+        return jsonify({"error": "Unauthorized"}), 401
+    csrf_error = auth_utils.require_session_csrf()
+    if csrf_error:
+        return csrf_error
+
+    now = datetime.datetime.utcnow().isoformat()
+    with db_utils.get_connection() as conn:
+        cursor = conn.execute(
+            """
+            DELETE FROM access_tokens
+            WHERE valid = 0
+               OR (
+                   expires_at IS NOT NULL AND expires_at != ''
+                   AND expires_at < ?
+               )
+            """,
+            (now,),
+        )
+        conn.commit()
+        deleted = cursor.rowcount if cursor.rowcount != -1 else conn.total_changes
+    return jsonify({"status": "token_cleanup", "deleted": deleted})
+
+
 @admin_bp.route("/admin/generate", methods=["POST"])
 @limiter.limit(ADMIN_RATE_LIMIT)
 def admin_generate():

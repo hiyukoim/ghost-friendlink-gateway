@@ -88,43 +88,6 @@ def get_or_create_article(slug: str, conn: Optional[sqlite3.Connection] = None, 
             conn.close()
 
 
-def migrate_legacy_tokens(conn: sqlite3.Connection) -> None:
-    legacy_tables = {
-        row[0] for row in conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        ).fetchall()
-    }
-    if "tokens" not in legacy_tables:
-        return
-    existing = conn.execute("SELECT COUNT(*) FROM access_tokens").fetchone()[0]
-    if existing:
-        return
-    rows = conn.execute(
-        "SELECT token, slug, referrer, created_at, expires_at, valid FROM tokens"
-    ).fetchall()
-    if not rows:
-        return
-    now = datetime.datetime.utcnow().isoformat()
-    for token_value, slug, referrer, created_at, expires_at, valid in rows:
-        article_id = get_or_create_article(slug, conn=conn)
-        created = created_at or now
-        conn.execute(
-            """
-            INSERT OR IGNORE INTO access_tokens
-            (token, article_id, guest, created_at, expires_at, valid, extras)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                token_value,
-                article_id,
-                referrer,
-                created,
-                expires_at,
-                1 if valid else 0,
-                json.dumps({})
-            )
-        )
-    conn.commit()
 
 
 def bootstrap_database():
@@ -181,7 +144,6 @@ def bootstrap_database():
             conn.commit()
 
         ensure_core_tables(conn)
-        migrate_legacy_tokens(conn)
 
         if settings.access_log_retention_days > 0:
             enforce_access_log_retention(conn)
