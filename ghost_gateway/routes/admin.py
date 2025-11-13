@@ -96,7 +96,7 @@ def admin_login():
 @admin_bp.route("/admin/logout", methods=["POST"])
 @limiter.limit(ADMIN_RATE_LIMIT)
 def admin_logout():
-    csrf_error = auth_utils.require_session_csrf(json=False)
+    csrf_error = auth_utils.require_session_csrf(json_response=False)
     if csrf_error:
         return csrf_error
     session.clear()
