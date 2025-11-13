@@ -2,7 +2,7 @@
 <html lang="en" data-bs-core="elegant">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard | Friend Link Gateway of {{ site.title }}</title>
+    <title>Dashboard | {{ site.title }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.2/css/halfmoon.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/halfmoon@2.0.2/css/cores/halfmoon.elegant.css">
@@ -50,6 +50,45 @@
             padding-top: 2.5rem;
             padding-bottom: 2.5rem;
         }
+        .app-footer {
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            text-align: center;
+            opacity: 0.8;
+        }
+        .app-footer a {
+            color: inherit;
+            text-decoration: underline;
+        }
+        @media (max-width: 768px) {
+            .table-responsive {
+                overflow: visible;
+            }
+            .min-table-width {
+                min-width: 100%;
+            }
+            .table-hover thead {
+                display: none;
+            }
+            .table-hover tbody tr {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                padding: 1rem;
+            }
+            .table-hover tbody td {
+                width: 48%;
+                border: none;
+                padding: 0;
+            }
+            .table-hover tbody td:nth-child(1) {
+                width: 100%;
+            }
+            .table-hover tbody td:last-child {
+                width: auto;
+                margin-left: auto;
+            }
+        }
         .dashboard-header {
             margin-bottom: 2.5rem;
         }
@@ -76,12 +115,12 @@
         <div class="content-wrapper container-lg py-30">
             <div class="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-start gap-15">
                 <div>
-                    <h1 class="h2 mb-2">Dashboard | Friend Link Gateway of {{ site.title }}</h1>
-                    <p class="text-muted mb-1">Signed in as {{ admin_username }}</p>
+                    <h1 class="h2 mb-2">Ghost Friend Link Gateway Dashboard | {{ site.title }}</h1>
+                    <p class="text-muted mb-1">Ghost Friend Link Gateway - Signed in as {{ admin_username }}</p>
                 </div>
                 <div class="d-flex flex-wrap align-items-center gap-10">
                     {% if ghost_url %}
-                    <a href="{{ ghost_url }}" target="_blank" rel="noopener" class="btn btn-secondary">Visit Your Ghost Blog</a>
+                    <a href="{{ ghost_url }}" target="_blank" rel="noopener" class="btn btn-secondary">Go to Ghost</a>
                     {% endif %}
                     <button class="btn btn-secondary btn-sm theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="currentColor" width="18" height="18">
@@ -111,7 +150,7 @@
                         <textarea id="gen-ref" rows="3" class="form-control" required placeholder="alice@example.com, bob@example.com"></textarea>
                         <small class="text-muted">Comma or newline separated for bulk (up to {{ max_bulk_refs }} entries).</small>
                     </div>
-                    <div class="row gapped">
+                    <div class="row gapped form-group">
                         <div class="col-md">
                             <label for="gen-days">Expires (days)</label>
                             <input type="number" id="gen-days" min="0" class="form-control" placeholder="Leave empty for no expiry">
@@ -121,11 +160,11 @@
                             <input type="text" id="gen-date" class="form-control" placeholder="e.g. 2025-12-31">
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block mt-15">Generate link</button>
+                    <button type="submit" class="btn btn-primary btn-block mt-15 form-group">Generate link</button>
                 </form>
-                <p class="text-muted font-size-12 mt-15 mb-0">
+                <div class="mt-20 mb-20" style="margin-top: 1rem;"><p class="text-muted font-size-12">
                     Required: slug + guest. Optional: expires (days) or expires at. Leave blank to never expire.
-                </p>
+                </p></div>
                 <div id="generator-result" class="mt-15"></div>
             </section>
 

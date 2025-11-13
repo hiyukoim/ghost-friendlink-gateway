@@ -41,6 +41,13 @@ def _parse_positive_int(value, default):
         return default
 
 
+def _format_short_date(value: str, default: str = "—") -> str:
+    dt = db_utils.parse_iso8601(value) if value else None
+    if not dt:
+        return default
+    return dt.strftime("%Y-%m-%d")
+
+
 @admin_bp.route("/admin/login", methods=["GET", "POST"])
 @limiter.limit(ADMIN_RATE_LIMIT)
 def admin_login():
@@ -82,6 +89,7 @@ def admin_login():
         next_url=next_param,
         username=username_value,
         ADMIN_SESSION_HOURS=settings.admin_session_hours,
+        app_version=settings.app_version,
     )
 
 
@@ -674,15 +682,30 @@ def admin_dashboard():
                         "valid": bool(latest_row[3]),
                     }
 
-    pairs = [
-        {
-            "slug": slug,
-            "referrer": ref,
-            "granted_at": created_at,
-            "token": latest_token_map.get((ref, slug)),
-        }
-        for slug, ref, created_at in pair_rows
-    ]
+    now = datetime.datetime.utcnow()
+    pairs = []
+    for slug, ref, created_at in pair_rows:
+        token_info = latest_token_map.get((ref, slug))
+        expires_at = token_info["expires_at"] if token_info else None
+        expires_display = "—"
+        expired = False
+        if token_info:
+            expires_display = _format_short_date(expires_at, "Never")
+            expires_dt = db_utils.parse_iso8601(expires_at)
+            if expires_dt and expires_dt < now:
+                expired = True
+            if not token_info["valid"]:
+                expired = True
+        pairs.append(
+            {
+                "slug": slug,
+                "referrer": ref,
+                "token": token_info,
+                "created_display": _format_short_date(created_at),
+                "expires_display": expires_display,
+                "expired": expired,
+            }
+        )
     tokens = [
         {
             "token": row[0],
@@ -713,6 +736,8 @@ def admin_dashboard():
         token_pages=token_pages,
         token_total=token_total,
         tokens_per_page=tokens_per_page,
+        app_version=settings.app_version,
+        current_year=datetime.datetime.utcnow().year,
     )
 
 

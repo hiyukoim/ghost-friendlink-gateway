@@ -389,7 +389,10 @@ def parse_iso8601(value: Optional[str]):
     if not value:
         return None
     try:
-        return datetime.datetime.fromisoformat(value)
+        cleaned = value.strip()
+        if cleaned.endswith("Z"):
+            cleaned = cleaned[:-1] + "+00:00"
+        return datetime.datetime.fromisoformat(cleaned)
     except Exception:
         return None
 

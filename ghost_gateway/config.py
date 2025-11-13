@@ -5,6 +5,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
+import subprocess
 
 from flask import Flask
 from flask_limiter import Limiter
@@ -15,6 +16,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 @dataclass(frozen=True)
 class Settings:
     db_path: str
+    app_version: str
     ghost_url: str
     ghost_admin_key: str
     ghost_content_api_key: str
@@ -55,6 +57,7 @@ def load_settings() -> Settings:
     app_ui_folder = Path(__file__).resolve().parent.parent / "app_ui"
     return Settings(
         db_path=os.getenv("DB_PATH", "data/tokens.db"),
+        app_version=_detect_version(),
         ghost_url=ghost_url,
         ghost_admin_key=os.getenv("GHOST_ADMIN_KEY", "").strip(),
         ghost_content_api_key=os.getenv("GHOST_CONTENT_API_KEY", "").strip(),
@@ -114,3 +117,22 @@ def configure_app(app: Flask, settings: Settings) -> None:
             x_for=settings.proxy_forwarded_for,
             x_proto=settings.proxy_forwarded_proto,
         )
+
+
+def _detect_version() -> str:
+    env_version = os.getenv("APP_VERSION")
+    if env_version:
+        return env_version.strip()
+    repo_root = Path(__file__).resolve().parent.parent
+    try:
+        output = subprocess.check_output(
+            ["git", "describe", "--tags", "--always"],
+            cwd=repo_root,
+            stderr=subprocess.DEVNULL,
+        )
+        version = output.decode().strip()
+        if version:
+            return version
+    except Exception:
+        pass
+    return "dev"
