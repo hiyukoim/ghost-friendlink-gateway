@@ -48,11 +48,13 @@ class Settings:
     flask_secret: str
     app_ui_folder: Path
 
+VERSION_FILE = Path(__file__).resolve().parent / "VERSION"
+
 
 def _detect_version() -> str:
-    env_version = os.getenv("APP_VERSION")
-    if env_version:
-        return env_version.strip()
+    file_version = _version_from_file()
+    if file_version:
+        return file_version
     repo_root = Path(__file__).resolve().parent.parent
     try:
         output = subprocess.check_output(
@@ -71,6 +73,14 @@ def _detect_version() -> str:
     except Exception:
         pass
     return "dev"
+
+
+def _version_from_file() -> Optional[str]:
+    try:
+        data = VERSION_FILE.read_text().strip()
+        return data or None
+    except FileNotFoundError:
+        return None
 
 
 def _env_bool(name: str, default: str = "false") -> bool:

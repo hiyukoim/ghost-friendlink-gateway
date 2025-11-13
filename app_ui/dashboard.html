@@ -63,6 +63,7 @@
         .dashboard-header {
             margin-bottom: 2.5rem;
             gap: 1rem;
+            width: 100%;
         }
         .dashboard-title {
             flex: 1 1 auto;
@@ -76,10 +77,11 @@
         .dashboard-actions {
             display: flex;
             flex-wrap: nowrap;
-            gap: 0.6rem;
+            gap: 0.85rem;
             align-items: center;
             justify-content: flex-end;
             flex: 0 0 auto;
+            white-space: nowrap;
         }
         .dashboard-actions .btn,
         .dashboard-actions form button {
@@ -90,6 +92,7 @@
             align-items: center;
             justify-content: center;
             padding-inline: 0.8rem;
+            margin: 0;
         }
         .dashboard-actions .btn svg {
             width: 15px;
@@ -101,6 +104,15 @@
             text-transform: uppercase;
             letter-spacing: 0.02em;
             color: rgba(255, 255, 255, 0.65);
+        }
+        @media (min-width: 768px) {
+            .dashboard-header {
+                flex-wrap: nowrap;
+                align-items: center;
+            }
+            .dashboard-actions {
+                margin-left: auto;
+            }
         }
         @media (max-width: 768px) {
             .dashboard-header {
@@ -148,6 +160,16 @@
                 margin-bottom: 0.15rem;
             }
         }
+        .table-hover th,
+        .table-hover td {
+            padding: 0.5rem 0.6rem;
+        }
+        .table-hover td:nth-child(5) .badge {
+            margin-left: 0.25rem;
+        }
+        .table-hover td:last-child button {
+            margin-left: 0.25rem;
+        }
         .first-panel {
             margin-top: 2.25rem;
         }
@@ -169,7 +191,7 @@
 <body class="with-custom-webkit-scrollbars with-custom-css-scrollbars" data-csrf="{{ csrf_token }}" data-admin="{{ admin_username }}">
     <div class="page-wrapper">
         <div class="content-wrapper container-lg py-30">
-            <div class="dashboard-header d-flex flex-column flex-md-row align-items-start align-items-md-center gap-15">
+            <div class="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-15">
                 <div class="dashboard-title">
                     <h1 class="h2 mb-2 dash-heading">Dashboard | {{ site.title }}</h1>
                     <p class="text-muted mb-1">Ghost Friend Link Gateway - Signed in as {{ admin_username }}</p>
